@@ -83,29 +83,43 @@ class VQC:
         """Compute expectation value <Z⊗I> on qubit 0.
 
         When ``backend_mode == "statevector"`` the exact expectation is
-        computed directly.  For other modes the circuit is executed on
-        the configured backend and the result is parsed from counts.
+        computed directly.  For IBM backends the Qiskit Runtime Sampler
+        primitive is used.  For Aer, ``backend.run()`` is used.
         """
         if self.backend_mode == "statevector":
             state = Statevector.from_instruction(qc)
             return float(np.real(state.expectation_value(self._observable)))
 
-        # Aer / IBM backend path
         if self.backend is None:
             raise ValueError(
                 f"Backend instance required for mode '{self.backend_mode}'."
             )
 
-        qc.measure_all()
-        job = self.backend.run(qc, shots=self.n_shots)
-        result = job.result()
-        counts = result.get_counts()
+        qc_meas = qc.copy()
+        qc_meas.measure_all()
+
+        # Try IBM Runtime Sampler first
+        try:
+            from qiskit_ibm_runtime import SamplerV2
+
+            sampler = SamplerV2(mode=self.backend)
+            job = sampler.run([qc_meas], shots=self.n_shots)
+            result = job.result()
+            pub_result = result[0]
+            counts = pub_result.data.meas.get_counts()
+        except Exception:
+            # Fallback to backend.run() (Aer / legacy)
+            job = self.backend.run(qc_meas, shots=self.n_shots)
+            result = job.result()
+            counts = result.get_counts()
 
         exp_val = 0.0
+        total = sum(counts.values())
         for bitstring, count in counts.items():
             parity = 1 if bitstring[0] == "0" else -1  # Z on qubit 0
             exp_val += parity * count
-        return exp_val / self.n_shots
+
+        return exp_val / total if total > 0 else 0.0
 
     # ------------------------------------------------------------------
     # Probability prediction
