@@ -15,11 +15,9 @@ from typing import Any, Callable
 
 import numpy as np
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import Statevector
-from qiskit.quantum_info.operators import SparsePauliOp
 
-from config import BACKEND_ENDIANNESS, DEFAULT_ENDIANNESS, DEFAULT_SHOTS, N_QUBITS, OBSERVABLE_PAULI
-from observable import expectation_z_qubit0_from_counts
+from backends import QuantumBackend, get_backend
+from config import DEFAULT_SHOTS
 from utils import clamp_probabilities
 
 AnsatzBuilder = Callable[..., QuantumCircuit]
@@ -44,6 +42,13 @@ class VQC:
         Optimiser name (passed through to ``scipy.optimize.minimize``).
     n_shots : int
         Number of measurement shots for non-statevector backends.
+    quantum_backend : backends.QuantumBackend, optional
+        Pre-built backend adapter (see ``backends.py``). When provided,
+        it takes precedence over ``backend_mode``/``backend``/``n_shots``
+        — mainly useful for dependency injection in tests (e.g. a fake
+        backend that counts batch calls). When ``None`` (the default), a
+        concrete backend is resolved from ``backend_mode`` via
+        ``backends.get_backend``.
 
     Attributes
     ----------
@@ -63,6 +68,7 @@ class VQC:
         backend: Any = None,
         optimizer: str = "COBYLA",
         n_shots: int = DEFAULT_SHOTS,
+        quantum_backend: QuantumBackend | None = None,
     ) -> None:
         self.ansatz_fn = ansatz_fn
         self.n_params = n_params
@@ -71,66 +77,33 @@ class VQC:
         self.optimizer = optimizer
         self.n_shots = n_shots
 
-        self._observable = SparsePauliOp.from_list([(OBSERVABLE_PAULI, 1)])
+        self._quantum_backend: QuantumBackend = (
+            quantum_backend
+            if quantum_backend is not None
+            else get_backend(backend_mode, backend, n_shots)
+        )
 
         self.theta_: np.ndarray | None = None
         self.history_: list[float] = []
         self.training_time_: float = 0.0
 
     # ------------------------------------------------------------------
-    # Internal: expectation value computation
+    # Internal: batched expectation value computation
     # ------------------------------------------------------------------
-    def _expectation(self, qc: QuantumCircuit) -> float:
-        """Compute the classifier's readout expectation value <Z>.
+    def _expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
+        """Compute the classifier's readout ``<Z>`` for a batch of circuits.
 
-        This targets a single, fixed physical qubit
+        Delegates to the injected/resolved ``QuantumBackend``
+        (``backends.py``), which targets a single, fixed physical qubit
         (``observable.MEASURED_QUBIT_INDEX``) consistently across every
-        backend.  See ``docs/observable_convention.md`` for the full
-        rationale.
+        backend implementation — see ``docs/observable_convention.md``.
 
-        When ``backend_mode == "statevector"`` the exact expectation is
-        computed directly from ``self._observable`` (``OBSERVABLE_PAULI``
-        in ``config.py``, kept consistent with
-        ``observable.MEASURED_QUBIT_INDEX``).  For every other backend
-        (Aer, IBM Runtime, SpinQ NMR) measurement counts are collected and
-        the same physical qubit's parity is extracted via the single
-        shared utility ``observable.expectation_z_qubit0_from_counts``,
-        using the bitstring endianness declared for this backend in
-        ``config.BACKEND_ENDIANNESS``.
+        All circuits needed for one training iteration or one prediction
+        call are passed in a single list so that each concrete backend
+        can submit them as one batch (Phase 4), instead of one
+        circuit/job per sample.
         """
-        if self.backend_mode == "statevector":
-            state = Statevector.from_instruction(qc)
-            return float(np.real(state.expectation_value(self._observable)))
-
-        if self.backend is None:
-            raise ValueError(
-                f"Backend instance required for mode '{self.backend_mode}'."
-            )
-
-        qc_meas = qc.copy()
-        qc_meas.measure_all()
-
-        # SpinQ NMR path
-        if self.backend_mode == "spinq_nmr":
-            result = self.backend.run([qc_meas])
-            counts = result.get_counts()
-        # Try IBM Runtime Sampler
-        elif self.backend_mode.startswith("ibm"):
-            from qiskit_ibm_runtime import SamplerV2
-
-            sampler = SamplerV2(mode=self.backend)
-            job = sampler.run([qc_meas], shots=self.n_shots)
-            result = job.result()
-            pub_result = result[0]
-            counts = pub_result.data.meas.get_counts()
-        else:
-            # Fallback to backend.run() (Aer / legacy)
-            job = self.backend.run(qc_meas, shots=self.n_shots)
-            result = job.result()
-            counts = result.get_counts()
-
-        endianness = BACKEND_ENDIANNESS.get(self.backend_mode, DEFAULT_ENDIANNESS)
-        return expectation_z_qubit0_from_counts(counts, endianness)
+        return self._quantum_backend.expectations(circuits)
 
     # ------------------------------------------------------------------
     # Probability prediction
@@ -150,13 +123,9 @@ class VQC:
         if self.theta_ is None:
             raise RuntimeError("Model not fitted. Call fit() first.")
 
-        probs = []
-        for x in X:
-            qc = self.ansatz_fn(list(x), self.theta_)
-            exp = self._expectation(qc)
-            p = (exp + 1.0) / 2.0  # map [-1, 1] → [0, 1]
-            p = clamp_probabilities(p)
-            probs.append(p)
+        circuits = [self.ansatz_fn(list(x), self.theta_) for x in X]
+        exps = self._expectations(circuits)  # single batched backend call
+        probs = [clamp_probabilities((exp + 1.0) / 2.0) for exp in exps]
 
         return np.array(probs, dtype=float)
 
@@ -204,15 +173,11 @@ class VQC:
         self.history_ = []
 
         def loss(theta: np.ndarray) -> float:
-            probs = []
-            for x_i in X:
-                qc = self.ansatz_fn(list(x_i), theta)
-                exp = self._expectation(qc)
-                p = (exp + 1.0) / 2.0
-                p = clamp_probabilities(p, eps=BCE_EPS)
-                probs.append(p)
-
-            probs_arr = np.array(probs)
+            circuits = [self.ansatz_fn(list(x_i), theta) for x_i in X]
+            exps = self._expectations(circuits)  # single batched backend call
+            probs_arr = np.array(
+                [clamp_probabilities((exp + 1.0) / 2.0, eps=BCE_EPS) for exp in exps]
+            )
             bce = -np.mean(y * np.log(probs_arr) + (1.0 - y) * np.log(1.0 - probs_arr))
             self.history_.append(float(bce))
             return float(bce)
