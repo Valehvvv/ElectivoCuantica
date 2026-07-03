@@ -116,19 +116,20 @@ def plot_metrics_comparison(
     Parameters
     ----------
     results_df : pd.DataFrame
-        Must contain columns "ansatz", "accuracy", "f1", "roc_auc".
+        Must contain columns "Ansatz", "Accuracy", "F1", "ROC_AUC".
     save_path : Path, optional
     """
-    metrics = ["accuracy", "f1", "roc_auc"]
-    x = np.arange(len(results_df["ansatz"]))
+    metrics = ["Accuracy", "F1", "ROC_AUC"]
+    x = np.arange(len(results_df["Ansatz"]))
     width = 0.25
 
     fig, ax = plt.subplots(figsize=(10, 5))
     for i, metric in enumerate(metrics):
-        ax.bar(x + i * width, results_df[metric], width, label=metric.upper())
+        label = metric.replace("_", " ").upper()
+        ax.bar(x + i * width, results_df[metric], width, label=label)
 
     ax.set_xticks(x + width)
-    ax.set_xticklabels(results_df["ansatz"])
+    ax.set_xticklabels(results_df["Ansatz"])
     ax.set_ylabel("Score")
     ax.set_title("Metrics Comparison by Ansatz")
     ax.legend()
@@ -152,11 +153,11 @@ def plot_structural_comparison(
     Parameters
     ----------
     results_df : pd.DataFrame
-        Must contain "ansatz", "depth", "size", "two_qubit_gates".
+        Must contain "Ansatz", "Depth", "Gate_Count", "Two_Qubit_Gates".
     save_path : Path, optional
     """
-    metrics = ["depth", "size", "two_qubit_gates"]
-    x = np.arange(len(results_df["ansatz"]))
+    metrics = ["Depth", "Gate_Count", "Two_Qubit_Gates"]
+    x = np.arange(len(results_df["Ansatz"]))
     width = 0.25
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -164,7 +165,7 @@ def plot_structural_comparison(
         ax.bar(x + i * width, results_df[metric], width, label=metric)
 
     ax.set_xticks(x + width)
-    ax.set_xticklabels(results_df["ansatz"])
+    ax.set_xticklabels(results_df["Ansatz"])
     ax.set_ylabel("Value")
     ax.set_title("Structural Comparison by Ansatz")
     ax.legend()
