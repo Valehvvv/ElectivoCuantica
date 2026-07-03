@@ -70,7 +70,7 @@ OBSERVABLE_PAULI: str = "ZI"
 # IBM Quantum credentials (set via environment or override here)
 # ---------------------------------------------------------------------------
 IBMQ_TOKEN: str = os.environ.get("IBMQ_TOKEN", "")
-IBMQ_INSTANCE: str = os.environ.get("IBMQ_INSTANCE", "ibm-q/open/main")
+IBMQ_INSTANCE: str = os.environ.get("IBMQ_INSTANCE", "")  # dejar vacío para plan Open
 IBMQ_BACKEND_SIMULATOR: str = "ibmq_qasm_simulator"
 IBMQ_BACKEND_HARDWARE: str = "ibm_fez"
 

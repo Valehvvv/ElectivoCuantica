@@ -42,11 +42,14 @@ def get_ibm_runtime_service() -> Any:
     try:
         from qiskit_ibm_runtime import QiskitRuntimeService
 
-        service = QiskitRuntimeService(
-            channel="ibm_quantum_platform",
-            token=IBMQ_TOKEN,
-            instance=IBMQ_INSTANCE,
-        )
+        kwargs: dict[str, str] = {
+            "channel": "ibm_quantum_platform",
+            "token": IBMQ_TOKEN,
+        }
+        if IBMQ_INSTANCE:
+            kwargs["instance"] = IBMQ_INSTANCE
+
+        service = QiskitRuntimeService(**kwargs)
         print("[ibm_runtime] Connected via QiskitRuntimeService.")
         return service
     except ImportError:
