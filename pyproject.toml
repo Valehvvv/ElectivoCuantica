@@ -1,0 +1,16 @@
+[project]
+name = "electivocuantica"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.11.0",
+    "numpy>=2.5.0",
+    "pandas>=3.0.3",
+    "qiskit>=2.5.0",
+    "qiskit-aer>=0.17.2",
+    "qiskit-ibm-runtime>=0.47.0",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.18.0",
+]
