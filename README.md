@@ -13,7 +13,8 @@ electivo/
 ├── notebooks/                     # Notebook original de referencia
 ├── results/                       # Resultados y gráficos generados
 │
-├── config.py                      # Constantes de configuración
+├── .env.example                   # Template de variables de entorno
+├── config.py                      # Constantes de configuración (carga .env automático)
 ├── utils.py                       # Utilidades generales (timer, etc.)
 ├── dataset.py                     # Carga y exportación de datos
 ├── preprocessing.py               # Pipeline de preprocesamiento
@@ -62,11 +63,41 @@ BACKEND_MODE = "ibm_simulator"  # Simulador IBM Quantum cloud
 BACKEND_MODE = "ibm_hardware"   # Hardware cuántico real IBM
 ```
 
-Para usar IBM Quantum, configurar la variable de entorno `IBMQ_TOKEN`:
+### Configuración para IBM Quantum
 
-```powershell
-$env:IBMQ_TOKEN = "tu-token-aqui"
+1. Copiar el archivo de variables de entorno:
+
+```bash
+cp .env.example .env
 ```
+
+2. Editar `.env` con tu token de IBM Quantum (obtenerlo en https://quantum.ibm.com):
+
+```env
+IBMQ_TOKEN=TU-TOKEN-AQUI
+IBMQ_INSTANCE=ibm-q/open/main
+```
+
+3. Instalar el runtime de IBM:
+
+```bash
+pip install qiskit-ibm-runtime
+```
+
+4. Cambiar `BACKEND_MODE` en `main.py`:
+
+```python
+BACKEND_MODE = "ibm_simulator"  # Simulador cloud IBM (rápido, sin cola)
+BACKEND_MODE = "ibm_hardware"   # Hardware real IBM (ibm_fez por defecto)
+```
+
+5. Ejecutar:
+
+```bash
+python main.py
+```
+
+El archivo `.env` está en `.gitignore` para no exponer tu token. Usa `.env.example` como referencia.
 
 ## Ansätze implementados
 

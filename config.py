@@ -7,6 +7,25 @@ from pathlib import Path
 
 import numpy as np
 
+
+def _load_env() -> None:
+    """Load environment variables from ``.env`` file if present."""
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+    with open(env_path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key, value = key.strip(), value.strip().strip("\"'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_env()
+
 # ---------------------------------------------------------------------------
 # Project paths
 # ---------------------------------------------------------------------------
@@ -53,7 +72,7 @@ OBSERVABLE_PAULI: str = "ZI"
 IBMQ_TOKEN: str = os.environ.get("IBMQ_TOKEN", "")
 IBMQ_INSTANCE: str = os.environ.get("IBMQ_INSTANCE", "ibm-q/open/main")
 IBMQ_BACKEND_SIMULATOR: str = "ibmq_qasm_simulator"
-IBMQ_BACKEND_HARDWARE: str = "ibm_brisbane"
+IBMQ_BACKEND_HARDWARE: str = "ibm_fez"
 
 # ---------------------------------------------------------------------------
 # Training
