@@ -17,25 +17,25 @@ dependencies = [
 
 # NOTE (Fase 5): this project's main environment targets Python >=3.12
 # (see `requires-python` above and `.python-version`). The SpinQ NMR SDK
-# (`spinqit`, provided by the professor as a local .whl) requires Python
-# 3.9 and is NOT published on PyPI, so it cannot be declared as a normal
-# resolvable dependency here without breaking `uv sync`/`uv lock` for the
-# main 3.12 environment.
+# (`spinqit`) IS published on PyPI, but only with wheels for cp38/cp39/
+# cp310 (no 3.11+), so it CANNOT be resolved as a normal dependency here
+# without breaking `uv sync`/`uv lock` for the main 3.12 environment.
 #
 # `spinq_nmr` mode therefore needs a SEPARATE, standalone Python 3.9
-# virtual environment (NOT this project's `.venv`), created and populated
-# with `uv venv` / `uv pip install` directly -- see
-# `docs/spinq_setup.md` for the full reproducible procedure, including
-# installing `spinqit` from the professor's `.whl` file.
+# virtual environment (NOT this project's `.venv`). Run
+# `scripts/setup_spinq.sh`, which creates `.venv-spinq` (`uv venv
+# --python 3.9 .venv-spinq`) and installs `spinqit` from PyPI into it
+# (`uv pip install spinqit`) -- see `docs/spinq_setup.md` for the full
+# reproducible procedure.
 #
 # The `spinq` extra below is informational only (documents which
 # already-on-PyPI packages `spinq_backend.py` needs besides `spinqit`
 # itself); it intentionally reuses unpinned specifiers already satisfied
 # by the base `dependencies` above so that `uv lock`/`uv sync` for the
 # main 3.12 environment are unaffected whether or not this extra is
-# requested. It is NOT installed by default and MUST NOT be installed
-# via `uv sync --extra spinq` in the main 3.12 `.venv` (spinqit itself
-# still won't resolve there) -- always use the separate 3.9 environment.
+# requested. It is NOT installed by default and MUST NOT be extended to
+# include `spinqit` (it still won't resolve in the main 3.12 `.venv`)
+# -- always use the separate 3.9 environment via `scripts/setup_spinq.sh`.
 [project.optional-dependencies]
 spinq = [
     "numpy",

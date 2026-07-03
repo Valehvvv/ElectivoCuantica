@@ -15,6 +15,7 @@ Modify the ``BACKEND_MODE`` variable below to switch between:
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 
 import numpy as np
@@ -52,7 +53,7 @@ from visualization import (
 # ──────────────────────────────────────────────────────────────────────
 # CONFIGURATION ─ change only this block to switch backends
 # ──────────────────────────────────────────────────────────────────────
-BACKEND_MODE: str = "statevector"  # "statevector" | "aer_simulator" | "ibm_simulator" | "ibm_hardware"
+BACKEND_MODE: str = os.environ.get("BACKEND_MODE", "spinq_nmr")  # "statevector" | "aer_simulator" | "ibm_simulator" | "ibm_hardware"
 USE_IBM_SIMULATOR: bool = True  # if "ibm_*", prefer simulator?
 IBM_BACKEND_NAME: str | None = None  # explicit name or None = auto
 N_SHOTS: int = 1024

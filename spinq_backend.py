@@ -5,7 +5,10 @@ native format and executes them on the SpinQ 2-qubit NMR quantum computer.
 
 Requirements
 ------------
-- ``spinqit`` package installed (provided by professor)
+- ``spinqit`` package installed from PyPI (``uv pip install spinqit``) in
+  a dedicated Python 3.9 virtual environment created via
+  ``scripts/setup_spinq.sh`` -- ``spinqit`` only publishes wheels for
+  cp38/cp39/cp310, not 3.11+
 - Python 3.9 recommended (the version used by the SpinQ tutorial); newer
   versions such as 3.12 may also work and are only a warning
 - Access to the SpinQ NMR device via local network IP
@@ -18,17 +21,15 @@ import sys
 import time
 from typing import Any
 
-import numpy as np
-
 # ---------------------------------------------------------------------------
 # Environment guard (Fase 5)
 # ---------------------------------------------------------------------------
 # The main project environment targets Python >=3.12 (see ``pyproject.toml``
-# / ``.python-version``). ``spinqit`` (the SpinQ NMR SDK, provided by the
-# professor as a local ``.whl``) is documented against Python 3.9 in the
-# tutorial and typically lives in a SEPARATE virtual environment -- see
-# ``docs/spinq_setup.md`` -- but may also work on 3.12 (version mismatch
-# is only warned about, not fatal).
+# / ``.python-version``). ``spinqit`` (the SpinQ NMR SDK) is installed from
+# PyPI (``uv pip install spinqit``) in a dedicated venv 3.9; PyPI only
+# publishes wheels for cp38/cp39/cp310, not 3.11+. It typically lives in a
+# SEPARATE virtual environment -- see ``docs/spinq_setup.md`` -- but may
+# also work on 3.12 (version mismatch is only warned about, not fatal).
 #
 # This check is intentionally cheap (``sys.version_info`` +
 # ``importlib.util.find_spec``, which does NOT import ``spinqit``) so that
@@ -39,15 +40,15 @@ _REQUIRED_PYTHON = (3, 9)
 
 _SPINQ_ENV_HELP = (
     "spinq_nmr backend requires a DEDICATED Python 3.9 environment with "
-    "'spinqit' installed from the professor's .whl file -- it is NOT part "
-    "of this project's main (Python >=3.12) environment/lockfile.\n"
+    "'spinqit' installed from PyPI -- it is NOT part of this project's "
+    "main (Python >=3.12) environment/lockfile ('spinqit' only publishes "
+    "wheels for cp38/cp39/cp310).\n"
     "\n"
     "To set it up:\n"
-    "  1. uv venv --python 3.9 .venv-spinq\n"
-    "  2. source .venv-spinq/bin/activate\n"
-    "  3. uv pip install ./path/to/spinqit-<version>.whl numpy qiskit\n"
-    "  4. Run main.py with BACKEND_MODE = \"spinq_nmr\" from within that "
-    "environment/venv.\n"
+    "  1. Run scripts/setup_spinq.sh (creates .venv-spinq via "
+    "'uv venv --python 3.9 .venv-spinq' and 'uv pip install spinqit').\n"
+    "  2. Run scripts/run_spinq.sh to launch main.py with "
+    "BACKEND_MODE=spinq_nmr inside that environment.\n"
     "\n"
     "Full reproducible instructions: docs/spinq_setup.md"
 )
@@ -156,102 +157,71 @@ class SpinQNMRBackend:
         except ImportError:
             raise ImportError(
                 "spinqit is not installed. "
-                "Install it from the .whl provided by your professor."
+                "Instalalo con: scripts/setup_spinq.sh "
+                "(uv pip install spinqit en venv Python 3.9)."
             )
 
     def _qiskit_to_spinq(self, qc: Any) -> Any:
         """Translate a Qiskit ``QuantumCircuit`` to a SpinQ ``Circuit``.
+
+        ``spinqit``'s gate objects (``Rx``, ``Ry``, ``Rz``, ``H``, ``CX``,
+        ...) are plain ``spinqit.model.basic_gate.Gate`` instances, *not*
+        callables/constructors. A gate (with its rotation angle, if any) is
+        appended to a ``Circuit`` via the ``<<`` operator using the form
+        ``circ << (gate, qubit_list, params)`` (``params`` omitted for
+        gates that take none). This mirrors the pattern used by
+        ``spinqit``'s own built-in translator
+        (``spinqit.compiler.translator.qiskit_to_spinq``).
 
         Mapping of gates
         ----------------
         ==============  ==============================================
         Qiskit gate      SpinQ equivalent
         ==============  ==============================================
-        ``ry(θ, q)``     ``Ry(θ, q)`` if available, else decomposed
-        ``rx(θ, q)``     ``Rx(θ, q)``
-        ``rz(θ, q)``     ``Rz(θ, q)`` if available, else decomposed
-        ``cx(c, t)``     ``CX(c, t)``
-        ``ecr(c, t)``    decomposed via H + CX + H if ECR not available
+        ``ry(θ, q)``     ``circ << (Ry, [q], [θ])``
+        ``rx(θ, q)``     ``circ << (Rx, [q], [θ])``
+        ``rz(θ, q)``     ``circ << (Rz, [q], [θ])``
+        ``cx(c, t)``     ``circ << (CX, [c, t])``
+        ``ecr(c, t)``    decomposed via H + CX + H (approximation)
         ==============  ==============================================
         """
-        from spinqit import Circuit, CX, Rx
+        from spinqit import CX, Circuit, H, Rx, Ry, Rz
 
         # SpinQ only supports 2 qubits on real NMR hardware
         circ = Circuit()
         qubits = circ.allocateQubits(2)
 
-        # Try importing optional gates
-        try:
-            from spinqit import Ry  # noqa: F811
-        except ImportError:
-            Ry = None
-        try:
-            from spinqit import Rz  # noqa: F811
-        except ImportError:
-            Rz = None
-        try:
-            from spinqit import H  # noqa: F811
-        except ImportError:
-            H = None
-
         # Iterate over Qiskit circuit instructions
         for instruction in qc.data:
             op = instruction.operation
             name = op.name
-            qubit_indices = [q._index for q in instruction.qubits]
+            qubit_indices = [qc.find_bit(q).index for q in instruction.qubits]
 
             if name == "ry":
                 theta = float(op.params[0])
                 qidx = qubit_indices[0]
-                if Ry is not None:
-                    circ << (Ry(theta), qubits[qidx])
-                elif Rz is not None:
-                    # Ry(θ) = Rz(π/2) · Rx(θ) · Rz(-π/2)
-                    circ << (Rz(np.pi / 2), qubits[qidx])
-                    circ << (Rx(theta), qubits[qidx])
-                    circ << (Rz(-np.pi / 2), qubits[qidx])
-                else:
-                    raise RuntimeError(
-                        "SpinQ backend needs Ry or Rz gate for ry decomposition."
-                    )
+                circ << (Ry, [qubits[qidx]], [theta])
 
             elif name == "rx":
                 theta = float(op.params[0])
                 qidx = qubit_indices[0]
-                circ << (Rx(theta), qubits[qidx])
+                circ << (Rx, [qubits[qidx]], [theta])
 
             elif name == "rz":
                 theta = float(op.params[0])
                 qidx = qubit_indices[0]
-                if Rz is not None:
-                    circ << (Rz(theta), qubits[qidx])
-                else:
-                    # Rz(θ) = Rx(-π/2) · Ry(θ) · Rx(π/2)
-                    # Requires Ry.  Skip if not available.
-                    if Ry is not None:
-                        circ << (Rx(-np.pi / 2), qubits[qidx])
-                        circ << (Ry(theta), qubits[qidx])
-                        circ << (Rx(np.pi / 2), qubits[qidx])
-                    else:
-                        raise RuntimeError(
-                            "SpinQ backend needs Rz or Ry gate for rz decomposition."
-                        )
+                circ << (Rz, [qubits[qidx]], [theta])
 
             elif name == "cx":
                 ctrl, tgt = qubit_indices[0], qubit_indices[1]
-                circ << (CX(ctrl, tgt),)  # type: ignore[misc]
+                circ << (CX, [qubits[ctrl], qubits[tgt]])
 
             elif name == "ecr":
                 ctrl, tgt = qubit_indices[0], qubit_indices[1]
-                if H is not None:
-                    # ECR(c,t) ≈ (I⊗H) · CNOT · (I⊗H) ... approximate
-                    circ << (H, qubits[tgt])
-                    circ << (CX(ctrl, tgt),)  # type: ignore[misc]
-                    circ << (H, qubits[tgt])
-                else:
-                    raise RuntimeError(
-                        "SpinQ backend needs H gate for ECR decomposition."
-                    )
+                # ECR(c,t) ≈ (I⊗H) · CNOT · (I⊗H) ... approximate
+                circ << (H, [qubits[tgt]])
+                circ << (CX, [qubits[ctrl], qubits[tgt]])
+                circ << (H, [qubits[tgt]])
 
             else:
                 print(f"[spinq] Warning: gate '{name}' skipped (not supported).")
@@ -294,7 +264,7 @@ class SpinQNMRBackend:
             exe = self._compiler.compile(spinq_circ, 0)  # type: ignore[union-attr]
             raw = self._engine.execute(exe, config)  # type: ignore[union-attr]
 
-            probs = raw.probabilities  # type: ignore[union-attr]
+            probs = raw.probabilities  # dict[str, float]  # type: ignore[union-attr]
             counts = _probabilities_to_counts(probs, shots if shots is not None else self._shots)
             results.add(counts)
 
@@ -308,16 +278,24 @@ class SpinQNMRBackend:
 # Internal helpers
 # ---------------------------------------------------------------------------
 def _probabilities_to_counts(
-    probabilities: list[float],
+    probabilities: dict[str, float],
     shots: int,
 ) -> dict[str, int]:
-    """Convert spinqit probability list to Qiskit-style counts dict.
+    """Convert spinqit's probability dict to a Qiskit-style counts dict.
 
-    SpinQ returns ``[p00, p01, p10, p11]``, assumed to be ordered as
-    ``p_{q0 q1}`` (i.e. ``bitstring[0]`` == qubit 0, "big-endian" -
-    the *opposite* of Qiskit's own little-endian ``get_counts()``
-    convention).  This assumption is declared explicitly via
-    ``config.BACKEND_ENDIANNESS["spinq_nmr"] = "big"`` and consumed by
+    SpinQ's NMR backend result exposes ``.probabilities`` as a **dict**
+    ``{bitstring: prob}`` (see
+    ``spinqit/backend/nmr_backend.py``, which iterates it via
+    ``for k, v in res.probabilities.items(): idx = int(k, 2)``) - *not* an
+    ordered ``[p00, p01, p10, p11]`` list. Each key is normalized to a
+    2-bit string (``format(int(bitstring, 2), "02b")``) for consistency,
+    matching spinqit's own ``int(k, 2)`` handling.
+
+    The bit order within each key is whatever spinqit itself emits and is
+    assumed to be ``p_{q0 q1}`` (i.e. ``bitstring[0]`` == qubit 0,
+    "big-endian" - the *opposite* of Qiskit's own little-endian
+    ``get_counts()`` convention). This assumption is declared explicitly
+    via ``config.BACKEND_ENDIANNESS["spinq_nmr"] = "big"`` and consumed by
     ``observable.expectation_z_qubit0_from_counts`` in
     ``models.VQC._expectation`` - it is NOT hard-coded here.
 
@@ -327,12 +305,13 @@ def _probabilities_to_counts(
     ``config.py`` to ``"little"`` - no other code changes should be
     required. See ``docs/observable_convention.md``.
     """
-    bitstrings = ["00", "01", "10", "11"]
     counts: dict[str, int] = {}
-    for bs, p in zip(bitstrings, probabilities):
-        count = int(round(p * shots))
+    for bitstring, p in probabilities.items():
+        # normalizar a 2 bits, consistente con el int(k, 2) de spinqit
+        key = format(int(bitstring, 2), "02b")
+        count = int(round(float(p) * shots))
         if count > 0:
-            counts[bs] = count
+            counts[key] = counts.get(key, 0) + count
     return counts
 
 
