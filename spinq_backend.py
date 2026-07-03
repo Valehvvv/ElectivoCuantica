@@ -223,7 +223,19 @@ def _probabilities_to_counts(
 ) -> dict[str, int]:
     """Convert spinqit probability list to Qiskit-style counts dict.
 
-    SpinQ returns ``[p00, p01, p10, p11]``.
+    SpinQ returns ``[p00, p01, p10, p11]``, assumed to be ordered as
+    ``p_{q0 q1}`` (i.e. ``bitstring[0]`` == qubit 0, "big-endian" -
+    the *opposite* of Qiskit's own little-endian ``get_counts()``
+    convention).  This assumption is declared explicitly via
+    ``config.BACKEND_ENDIANNESS["spinq_nmr"] = "big"`` and consumed by
+    ``observable.expectation_z_qubit0_from_counts`` in
+    ``models.VQC._expectation`` - it is NOT hard-coded here.
+
+    TODO(hardware-verification): this ordering has not been confirmed
+    against real SpinQ NMR hardware output. If it turns out to be
+    little-endian instead, update ``BACKEND_ENDIANNESS["spinq_nmr"]`` in
+    ``config.py`` to ``"little"`` - no other code changes should be
+    required. See ``docs/observable_convention.md``.
     """
     bitstrings = ["00", "01", "10", "11"]
     counts: dict[str, int] = {}

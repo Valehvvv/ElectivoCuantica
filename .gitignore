@@ -22,3 +22,7 @@ Thumbs.db
 results/*.png
 results/*.csv
 data/*.csv
+
+# Frozen regression baseline (Phase 0) - must be tracked so
+# tests/test_regression_baseline.py works on a fresh checkout.
+!results/baseline_statevector.csv

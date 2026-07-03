@@ -18,7 +18,8 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 from qiskit.quantum_info.operators import SparsePauliOp
 
-from config import DEFAULT_SHOTS, N_QUBITS, OBSERVABLE_PAULI
+from config import BACKEND_ENDIANNESS, DEFAULT_ENDIANNESS, DEFAULT_SHOTS, N_QUBITS, OBSERVABLE_PAULI
+from observable import expectation_z_qubit0_from_counts
 from utils import clamp_probabilities
 
 AnsatzBuilder = Callable[..., QuantumCircuit]
@@ -80,12 +81,22 @@ class VQC:
     # Internal: expectation value computation
     # ------------------------------------------------------------------
     def _expectation(self, qc: QuantumCircuit) -> float:
-        """Compute expectation value <Z⊗I> on qubit 0.
+        """Compute the classifier's readout expectation value <Z>.
+
+        This targets a single, fixed physical qubit
+        (``observable.MEASURED_QUBIT_INDEX``) consistently across every
+        backend.  See ``docs/observable_convention.md`` for the full
+        rationale.
 
         When ``backend_mode == "statevector"`` the exact expectation is
-        computed directly.  For IBM backends the Qiskit Runtime Sampler
-        primitive is used.  For SpinQ NMR the ``spinq_backend.run()``
-        method is used.  For Aer, ``backend.run()`` is used.
+        computed directly from ``self._observable`` (``OBSERVABLE_PAULI``
+        in ``config.py``, kept consistent with
+        ``observable.MEASURED_QUBIT_INDEX``).  For every other backend
+        (Aer, IBM Runtime, SpinQ NMR) measurement counts are collected and
+        the same physical qubit's parity is extracted via the single
+        shared utility ``observable.expectation_z_qubit0_from_counts``,
+        using the bitstring endianness declared for this backend in
+        ``config.BACKEND_ENDIANNESS``.
         """
         if self.backend_mode == "statevector":
             state = Statevector.from_instruction(qc)
@@ -118,13 +129,8 @@ class VQC:
             result = job.result()
             counts = result.get_counts()
 
-        exp_val = 0.0
-        total = sum(counts.values())
-        for bitstring, count in counts.items():
-            parity = 1 if bitstring[0] == "0" else -1  # Z on qubit 0
-            exp_val += parity * count
-
-        return exp_val / total if total > 0 else 0.0
+        endianness = BACKEND_ENDIANNESS.get(self.backend_mode, DEFAULT_ENDIANNESS)
+        return expectation_z_qubit0_from_counts(counts, endianness)
 
     # ------------------------------------------------------------------
     # Probability prediction

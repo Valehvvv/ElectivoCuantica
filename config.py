@@ -63,8 +63,36 @@ DEFAULT_OPTIMIZER: str = "COBYLA"
 DEFAULT_MAX_ITER: int = 200
 DEFAULT_SHOTS: int = 1024
 
-# Observable: Pauli-Z on qubit 0
+# ---------------------------------------------------------------------------
+# Observable / readout convention (see docs/observable_convention.md)
+# ---------------------------------------------------------------------------
+# The classifier reads out Pauli-Z on physical circuit qubit index
+# ``observable.MEASURED_QUBIT_INDEX`` (currently 1), not qubit 0.  This
+# matches Qiskit's little-endian convention where the "ZI" Pauli string
+# acts on qubit 1 (leftmost char = highest qubit index) and where
+# ``counts`` bitstrings have ``bitstring[0]`` == qubit 1.  This convention
+# was kept as-is (rather than "corrected" to the real qubit 0) specifically
+# to avoid changing the statevector baseline captured in
+# ``results/baseline_statevector.csv`` (Phase 0).  ``OBSERVABLE_PAULI``
+# below MUST stay consistent with ``observable.MEASURED_QUBIT_INDEX``.
 OBSERVABLE_PAULI: str = "ZI"
+
+# Bitstring ordering ("endianness") per backend mode, consumed by
+# ``observable.expectation_z_qubit0_from_counts`` inside
+# ``models.VQC._expectation``.  All Qiskit-based backends use "little"
+# (bitstring[0] == qubit n-1).  SpinQ NMR is assumed "big" (bitstring[0]
+# == qubit 0) based on how ``spinq_backend._probabilities_to_counts``
+# constructs its bitstrings from the ``[p00, p01, p10, p11]`` probability
+# list -- TODO: verify this against real SpinQ NMR hardware output before
+# trusting SpinQ results quantitatively.
+BACKEND_ENDIANNESS: dict[str, str] = {
+    "statevector": "little",  # not actually used for counts (analytic path)
+    "aer_simulator": "little",
+    "ibm_simulator": "little",
+    "ibm_hardware": "little",
+    "spinq_nmr": "big",  # TODO: verify on real SpinQ NMR hardware
+}
+DEFAULT_ENDIANNESS: str = "little"
 
 # ---------------------------------------------------------------------------
 # IBM Quantum credentials (set via environment or override here)
