@@ -41,8 +41,8 @@ class SpinQNMRBackend:
         self,
         ip: str,
         port: int = 8989,
-        username: str = "USUARIO_REDACTED",
-        password: str = "PASS_REDACTED",
+        username: str = "",
+        password: str = "",
         task_name: str = "VQC-Experiment",
         shots: int = 1024,
     ) -> None:
@@ -250,8 +250,8 @@ class _SpinQResultBatch:
 def create_spinq_backend(
     ip: str,
     port: int = 8989,
-    username: str = "USUARIO_REDACTED",
-    password: str = "PASS_REDACTED",
+    username: str = "",
+    password: str = "",
     task_name: str = "VQC-Experiment",
     shots: int = 1024,
 ) -> SpinQNMRBackend:
@@ -260,7 +260,7 @@ def create_spinq_backend(
     Parameters
     ----------
     ip : str
-        NMR device IP (e.g. ``"IP_REDACTED"``).
+        NMR device IP (provided by the lab).
     port : int
         Device port.
     username : str

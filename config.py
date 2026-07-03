@@ -77,10 +77,10 @@ IBMQ_BACKEND_HARDWARE: str = "ibm_fez"
 # ---------------------------------------------------------------------------
 # SpinQ NMR configuration
 # ---------------------------------------------------------------------------
-SPINQ_IP: str = os.environ.get("SPINQ_IP", "IP_REDACTED")
+SPINQ_IP: str = os.environ.get("SPINQ_IP", "")
 SPINQ_PORT: int = int(os.environ.get("SPINQ_PORT", "8989"))
-SPINQ_USERNAME: str = os.environ.get("SPINQ_USERNAME", "USUARIO_REDACTED")
-SPINQ_PASSWORD: str = os.environ.get("SPINQ_PASSWORD", "PASS_REDACTED")
+SPINQ_USERNAME: str = os.environ.get("SPINQ_USERNAME", "")
+SPINQ_PASSWORD: str = os.environ.get("SPINQ_PASSWORD", "")
 SPINQ_TASK_NAME: str = os.environ.get("SPINQ_TASK_NAME", "VQC-Experiment")
 
 # ---------------------------------------------------------------------------
