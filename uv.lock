@@ -316,6 +316,12 @@ dependencies = [
     { name = "scipy" },
 ]
 
+[package.optional-dependencies]
+spinq = [
+    { name = "numpy" },
+    { name = "qiskit" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -325,13 +331,16 @@ dev = [
 requires-dist = [
     { name = "matplotlib", specifier = ">=3.11.0" },
     { name = "numpy", specifier = ">=2.5.0" },
+    { name = "numpy", marker = "extra == 'spinq'" },
     { name = "pandas", specifier = ">=3.0.3" },
     { name = "qiskit", specifier = ">=2.5.0" },
+    { name = "qiskit", marker = "extra == 'spinq'" },
     { name = "qiskit-aer", specifier = ">=0.17.2" },
     { name = "qiskit-ibm-runtime", specifier = ">=0.47.0" },
     { name = "scikit-learn", specifier = ">=1.9.0" },
     { name = "scipy", specifier = ">=1.18.0" },
 ]
+provides-extras = ["spinq"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.1.1" }]

@@ -6,16 +6,95 @@ native format and executes them on the SpinQ 2-qubit NMR quantum computer.
 Requirements
 ------------
 - ``spinqit`` package installed (provided by professor)
-- Python 3.9 environment (as specified by SpinQ documentation)
+- Python 3.9 recommended (the version used by the SpinQ tutorial); newer
+  versions such as 3.12 may also work and are only a warning
 - Access to the SpinQ NMR device via local network IP
 """
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 import time
 from typing import Any
 
 import numpy as np
+
+# ---------------------------------------------------------------------------
+# Environment guard (Fase 5)
+# ---------------------------------------------------------------------------
+# The main project environment targets Python >=3.12 (see ``pyproject.toml``
+# / ``.python-version``). ``spinqit`` (the SpinQ NMR SDK, provided by the
+# professor as a local ``.whl``) is documented against Python 3.9 in the
+# tutorial and typically lives in a SEPARATE virtual environment -- see
+# ``docs/spinq_setup.md`` -- but may also work on 3.12 (version mismatch
+# is only warned about, not fatal).
+#
+# This check is intentionally cheap (``sys.version_info`` +
+# ``importlib.util.find_spec``, which does NOT import ``spinqit``) so that
+# importing this module in the main 3.12 environment stays side-effect
+# free; the real ``import spinqit`` remains lazy inside ``connect()`` as
+# before.
+_REQUIRED_PYTHON = (3, 9)
+
+_SPINQ_ENV_HELP = (
+    "spinq_nmr backend requires a DEDICATED Python 3.9 environment with "
+    "'spinqit' installed from the professor's .whl file -- it is NOT part "
+    "of this project's main (Python >=3.12) environment/lockfile.\n"
+    "\n"
+    "To set it up:\n"
+    "  1. uv venv --python 3.9 .venv-spinq\n"
+    "  2. source .venv-spinq/bin/activate\n"
+    "  3. uv pip install ./path/to/spinqit-<version>.whl numpy qiskit\n"
+    "  4. Run main.py with BACKEND_MODE = \"spinq_nmr\" from within that "
+    "environment/venv.\n"
+    "\n"
+    "Full reproducible instructions: docs/spinq_setup.md"
+)
+
+
+class SpinQEnvironmentError(RuntimeError):
+    """Raised when ``spinq_nmr`` mode is requested but ``spinqit`` is not
+    importable in the current environment.
+
+    A Python version other than 3.9 is only a warning (see
+    ``check_spinq_environment``), not a cause for this error.
+
+    See ``docs/spinq_setup.md`` for how to create that environment.
+    """
+
+
+def check_spinq_environment() -> None:
+    """Verify the current interpreter can run the SpinQ NMR backend.
+
+    Checks (without importing ``spinqit``, so this stays cheap/safe to
+    call from the main 3.12 environment):
+
+    1. ``spinqit`` is importable (present on ``sys.path``). This is the
+       only HARD requirement.
+    2. The running Python is 3.9.x. This is the version used by the
+       professor's tutorial, but NOT a hard requirement -- ``spinqit``
+       may work on 3.12, so a mismatch is only a WARNING.
+
+    Raises
+    ------
+    SpinQEnvironmentError
+        With an actionable message pointing to ``docs/spinq_setup.md`` if
+        ``spinqit`` is not importable.
+    """
+    if importlib.util.find_spec("spinqit") is None:
+        problem = "'spinqit' is not importable in this environment."
+        raise SpinQEnvironmentError(
+            f"  - {problem}\n\n{_SPINQ_ENV_HELP}"
+        )
+
+    if sys.version_info[:2] != _REQUIRED_PYTHON:
+        running = f"{sys.version_info.major}.{sys.version_info.minor}"
+        print(
+            f"[spinq] aviso: probado en Python "
+            f"{_REQUIRED_PYTHON[0]}.{_REQUIRED_PYTHON[1]} segun el tutorial; "
+            f"intentando en Python {running}."
+        )
 
 
 class SpinQNMRBackend:
@@ -56,7 +135,18 @@ class SpinQNMRBackend:
         self._compiler = None
 
     def connect(self) -> None:
-        """Initialise the SpinQ engine and compiler."""
+        """Initialise the SpinQ engine and compiler.
+
+        Raises
+        ------
+        SpinQEnvironmentError
+            If ``spinqit`` is not importable in the current environment
+            (see ``docs/spinq_setup.md``). Checked *before* attempting the
+            (lazy) ``import spinqit`` so the error message is actionable
+            rather than a bare ``ImportError``. A Python version other
+            than 3.9 only prints a warning and proceeds.
+        """
+        check_spinq_environment()
         try:
             from spinqit import get_nmr, get_compiler
 

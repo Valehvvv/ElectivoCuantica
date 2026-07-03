@@ -86,7 +86,7 @@ def _get_backend():
 
     if BACKEND_MODE == "spinq_nmr":
         try:
-            from spinq_backend import create_spinq_backend
+            from spinq_backend import SpinQEnvironmentError, create_spinq_backend
             from config import (
                 SPINQ_IP,
                 SPINQ_PASSWORD,
@@ -103,6 +103,10 @@ def _get_backend():
                 task_name=SPINQ_TASK_NAME,
                 shots=N_SHOTS,
             )
+        except SpinQEnvironmentError as exc:
+            print(f"[main] spinq_nmr environment check failed:\n{exc}")
+            print("[main] Falling back to statevector.")
+            return None
         except ImportError:
             print("[main] spinqit not installed; falling back to statevector.")
             return None

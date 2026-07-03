@@ -29,27 +29,27 @@ electivo/
 
 ## Requisitos
 
-### Opción 1: uv (recomendado)
+Este proyecto usa [`uv`](https://docs.astral.sh/uv/) para gestionar el
+entorno y las dependencias (Python >= 3.12, ver `.python-version`).
 
 ```bash
-pip install uv
+# Instalar uv (si no lo tienes; alternativamente ver la guía oficial de uv)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Instalar/sincronizar las dependencias del proyecto
 uv sync
 ```
 
-### Opción 2: pip
-
-```bash
-pip install numpy pandas matplotlib scikit-learn qiskit qiskit-aer scipy
-# Opcional para IBM Quantum:
-pip install qiskit-ibm-runtime
-```
+Todos los comandos del proyecto se ejecutan con `uv run ...` (por ejemplo
+`uv run python main.py`, `uv run pytest tests/`), lo que asegura que se
+usa el entorno virtual gestionado por `uv` (`.venv`).
 
 ## Uso
 
 ### Ejecución completa (simulación local por defecto)
 
 ```bash
-python main.py
+uv run python main.py
 ```
 
 Esto ejecuta el pipeline completo:
@@ -73,34 +73,34 @@ BACKEND_MODE = "spinq_nmr"      # SpinQ NMR 2-qubit (computador U)
 
 ### Configuración para SpinQ NMR (computador cuántico de la universidad)
 
-1. Instalar `spinqit` en un entorno conda con Python 3.9 (requisito del fabricante):
+`spinqit` (el SDK de SpinQ, entregado por el profesor como `.whl`)
+requiere Python 3.9 y es incompatible con el entorno principal de este
+proyecto (Python >= 3.12). Por eso necesita un **entorno `uv` separado**
+(`.venv-spinq`), que **no** se instala con `uv sync`.
+
+Procedimiento completo, reproducible con `uv` (creación del entorno 3.9,
+instalación de la `.whl`, variables `.env`, limitaciones conocidas):
+**[`docs/spinq_setup.md`](docs/spinq_setup.md)**.
+
+Resumen rápido:
 
 ```bash
-conda create --name spinq_env python=3.9
-conda activate spinq_env
-pip install spinqit numpy==1.21.0
+uv venv --python 3.9 .venv-spinq
+source .venv-spinq/bin/activate
+uv pip install /ruta/a/spinqit-<version>.whl numpy qiskit
 ```
 
-2. Configurar IP del NMR en `.env`:
-
-```env
-SPINQ_IP=IP_DEL_COMPUTADOR
-SPINQ_PORT=8989
-SPINQ_USERNAME=USUARIO_SPINQ
-SPINQ_PASSWORD=CONTRASENA_SPINQ
-```
-
-3. Cambiar `BACKEND_MODE` en `main.py`:
-
-```python
-BACKEND_MODE = "spinq_nmr"
-```
-
-4. Ejecutar:
+Luego configura `.env` (`SPINQ_IP`, `SPINQ_PORT`, `SPINQ_USERNAME`,
+`SPINQ_PASSWORD`, `SPINQ_TASK_NAME`), cambia `BACKEND_MODE = "spinq_nmr"`
+en `main.py`, y ejecútalo **desde `.venv-spinq` activado**:
 
 ```bash
 python main.py
 ```
+
+Si el entorno 3.9 + `spinqit` no está disponible, `main.py` lo detecta
+con un mensaje explícito (ver `spinq_backend.check_spinq_environment`) y
+hace *fallback* a `statevector` en vez de fallar silenciosamente.
 
 ### Configuración para IBM Quantum
 
@@ -117,11 +117,9 @@ IBMQ_TOKEN=TU-TOKEN-AQUI
 IBMQ_INSTANCE=ibm-q/open/main
 ```
 
-3. Instalar el runtime de IBM:
-
-```bash
-pip install qiskit-ibm-runtime
-```
+3. `qiskit-ibm-runtime` ya forma parte de las dependencias del proyecto
+   (`pyproject.toml`), así que `uv sync` lo instala automáticamente; no
+   hace falta instalarlo aparte.
 
 4. Cambiar `BACKEND_MODE` en `main.py`:
 
@@ -133,7 +131,7 @@ BACKEND_MODE = "ibm_hardware"   # Hardware real IBM (ibm_fez por defecto)
 5. Ejecutar:
 
 ```bash
-python main.py
+uv run python main.py
 ```
 
 El archivo `.env` está en `.gitignore` para no exponer tu token. Usa `.env.example` como referencia.
