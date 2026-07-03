@@ -29,10 +29,17 @@ electivo/
 
 ## Requisitos
 
+### Opción 1: uv (recomendado)
+
 ```bash
-pip install numpy pandas matplotlib scikit-learn qiskit scipy
-# Opcional para Aer:
-pip install qiskit-aer
+pip install uv
+uv sync
+```
+
+### Opción 2: pip
+
+```bash
+pip install numpy pandas matplotlib scikit-learn qiskit qiskit-aer scipy
 # Opcional para IBM Quantum:
 pip install qiskit-ibm-runtime
 ```
