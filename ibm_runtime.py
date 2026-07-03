@@ -43,7 +43,7 @@ def get_ibm_runtime_service() -> Any:
         from qiskit_ibm_runtime import QiskitRuntimeService
 
         service = QiskitRuntimeService(
-            channel="ibm_quantum",
+            channel="ibm_quantum_platform",
             token=IBMQ_TOKEN,
             instance=IBMQ_INSTANCE,
         )
