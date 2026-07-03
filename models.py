@@ -84,7 +84,8 @@ class VQC:
 
         When ``backend_mode == "statevector"`` the exact expectation is
         computed directly.  For IBM backends the Qiskit Runtime Sampler
-        primitive is used.  For Aer, ``backend.run()`` is used.
+        primitive is used.  For SpinQ NMR the ``spinq_backend.run()``
+        method is used.  For Aer, ``backend.run()`` is used.
         """
         if self.backend_mode == "statevector":
             state = Statevector.from_instruction(qc)
@@ -98,8 +99,12 @@ class VQC:
         qc_meas = qc.copy()
         qc_meas.measure_all()
 
-        # Try IBM Runtime Sampler first
-        try:
+        # SpinQ NMR path
+        if self.backend_mode == "spinq_nmr":
+            result = self.backend.run([qc_meas])
+            counts = result.get_counts()
+        # Try IBM Runtime Sampler
+        elif self.backend_mode.startswith("ibm"):
             from qiskit_ibm_runtime import SamplerV2
 
             sampler = SamplerV2(mode=self.backend)
@@ -107,7 +112,7 @@ class VQC:
             result = job.result()
             pub_result = result[0]
             counts = pub_result.data.meas.get_counts()
-        except Exception:
+        else:
             # Fallback to backend.run() (Aer / legacy)
             job = self.backend.run(qc_meas, shots=self.n_shots)
             result = job.result()

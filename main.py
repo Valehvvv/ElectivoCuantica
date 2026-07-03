@@ -10,6 +10,7 @@ Modify the ``BACKEND_MODE`` variable below to switch between:
 - ``"aer_simulator"`` → Qiskit Aer local simulator
 - ``"ibm_simulator"`` → IBM cloud simulator
 - ``"ibm_hardware"``  → real IBM Quantum device
+- ``"spinq_nmr"``     → SpinQ NMR 2-qubit quantum computer
 """
 
 from __future__ import annotations
@@ -51,7 +52,7 @@ from visualization import (
 # ──────────────────────────────────────────────────────────────────────
 # CONFIGURATION ─ change only this block to switch backends
 # ──────────────────────────────────────────────────────────────────────
-BACKEND_MODE: str = "ibm_simulator"  # "statevector" | "aer_simulator" | "ibm_simulator" | "ibm_hardware"
+BACKEND_MODE: str = "statevector"  # "statevector" | "aer_simulator" | "ibm_simulator" | "ibm_hardware"
 USE_IBM_SIMULATOR: bool = True  # if "ibm_*", prefer simulator?
 IBM_BACKEND_NAME: str | None = None  # explicit name or None = auto
 N_SHOTS: int = 1024
@@ -82,6 +83,29 @@ def _get_backend():
             backend_name=IBM_BACKEND_NAME,
             simulator=(BACKEND_MODE == "ibm_simulator" or USE_IBM_SIMULATOR),
         )
+
+    if BACKEND_MODE == "spinq_nmr":
+        try:
+            from spinq_backend import create_spinq_backend
+            from config import (
+                SPINQ_IP,
+                SPINQ_PASSWORD,
+                SPINQ_PORT,
+                SPINQ_TASK_NAME,
+                SPINQ_USERNAME,
+            )
+
+            return create_spinq_backend(
+                ip=SPINQ_IP,
+                port=SPINQ_PORT,
+                username=SPINQ_USERNAME,
+                password=SPINQ_PASSWORD,
+                task_name=SPINQ_TASK_NAME,
+                shots=N_SHOTS,
+            )
+        except ImportError:
+            print("[main] spinqit not installed; falling back to statevector.")
+            return None
 
     print(f"[main] Unknown BACKEND_MODE '{BACKEND_MODE}'; using statevector.")
     return None
@@ -145,10 +169,10 @@ plot_data_distribution(
 # ──────────────────────────────────────────────────────────────────────
 backend = _get_backend()
 
-# Fallback to statevector if IBM backend could not be resolved
+# Fallback to statevector if backend could not be resolved
 actual_mode = BACKEND_MODE
-if backend is None and BACKEND_MODE.startswith("ibm"):
-    print("[main] No IBM backend available; falling back to statevector.")
+if backend is None and BACKEND_MODE.startswith(("ibm", "spinq")):
+    print("[main] No backend available; falling back to statevector.")
     actual_mode = "statevector"
 
 print(f"\nBackend mode: {actual_mode}")

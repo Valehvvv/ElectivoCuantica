@@ -61,6 +61,38 @@ BACKEND_MODE = "statevector"    # Simulación exacta (default)
 BACKEND_MODE = "aer_simulator"  # Qiskit Aer local
 BACKEND_MODE = "ibm_simulator"  # Simulador IBM Quantum cloud
 BACKEND_MODE = "ibm_hardware"   # Hardware cuántico real IBM
+BACKEND_MODE = "spinq_nmr"      # SpinQ NMR 2-qubit (computador U)
+```
+
+### Configuración para SpinQ NMR (computador cuántico de la universidad)
+
+1. Instalar `spinqit` en un entorno conda con Python 3.9 (requisito del fabricante):
+
+```bash
+conda create --name spinq_env python=3.9
+conda activate spinq_env
+pip install spinqit numpy==1.21.0
+```
+
+2. Configurar IP del NMR en `.env`:
+
+```env
+SPINQ_IP=IP_REDACTED
+SPINQ_PORT=8989
+SPINQ_USERNAME=USUARIO_REDACTED
+SPINQ_PASSWORD=PASS_REDACTED
+```
+
+3. Cambiar `BACKEND_MODE` en `main.py`:
+
+```python
+BACKEND_MODE = "spinq_nmr"
+```
+
+4. Ejecutar:
+
+```bash
+python main.py
 ```
 
 ### Configuración para IBM Quantum
