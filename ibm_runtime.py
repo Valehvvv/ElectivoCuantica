@@ -71,6 +71,25 @@ def get_ibm_runtime_service() -> Any:
         return None
 
 
+def list_available_backends(service: Any) -> list[str]:
+    """Return a list of backend names available via this service.
+
+    Parameters
+    ----------
+    service : QiskitRuntimeService or IBMQ provider.
+
+    Returns
+    -------
+    list[str]
+    """
+    if service is None:
+        return []
+    try:
+        return [b.name for b in service.backends()]
+    except Exception:
+        return []
+
+
 def select_backend(
     service: Any,
     backend_name: str | None = None,
@@ -78,15 +97,16 @@ def select_backend(
 ) -> Any | None:
     """Select a specific backend from an IBM service.
 
+    If ``backend_name`` is ``None``, auto-select the first available
+    simulator or QPU depending on ``simulator``.
+
     Parameters
     ----------
     service : QiskitRuntimeService or IBMQ provider.
     backend_name : str, optional
-        Explicit backend name.  If ``None``, one is chosen based on
-        ``simulator``.
+        Explicit backend name.
     simulator : bool
-        If ``True`` and ``backend_name`` is ``None``, pick the default IBM
-        cloud simulator.
+        If ``True`` and ``backend_name`` is ``None``, pick a simulator.
 
     Returns
     -------
@@ -95,16 +115,38 @@ def select_backend(
     if service is None:
         return None
 
-    if backend_name is None:
-        backend_name = IBMQ_BACKEND_SIMULATOR if simulator else IBMQ_BACKEND_HARDWARE
+    if backend_name is not None:
+        try:
+            backend = service.backend(backend_name)
+            print(f"[ibm_runtime] Selected backend: {backend.name}")
+            return backend
+        except Exception:
+            print(f"[ibm_runtime] Backend '{backend_name}' not found, auto-detecting...")
 
-    try:
-        backend = service.backend(backend_name)
-        print(f"[ibm_runtime] Selected backend: {backend.name}")
-        return backend
-    except Exception as exc:
-        print(f"[ibm_runtime] Could not select backend '{backend_name}': {exc}")
+    all_backends = service.backends()
+    if not all_backends:
+        print("[ibm_runtime] No backends available.")
         return None
+
+    print(f"[ibm_runtime] Available backends: {[b.name for b in all_backends]}")
+
+    if simulator:
+        sim_backends = [b for b in all_backends if b.simulator]
+        if sim_backends:
+            backend = sim_backends[0]
+            print(f"[ibm_runtime] Auto-selected simulator: {backend.name}")
+            return backend
+        print("[ibm_runtime] No simulator found, using first available backend.")
+
+    real_backends = [b for b in all_backends if not b.simulator]
+    if real_backends:
+        backend = real_backends[0]
+        print(f"[ibm_runtime] Auto-selected QPU: {backend.name}")
+        return backend
+
+    backend = all_backends[0]
+    print(f"[ibm_runtime] Auto-selected backend: {backend.name}")
+    return backend
 
 
 def transpile_for_backend(

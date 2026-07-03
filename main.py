@@ -51,7 +51,7 @@ from visualization import (
 # ──────────────────────────────────────────────────────────────────────
 # CONFIGURATION ─ change only this block to switch backends
 # ──────────────────────────────────────────────────────────────────────
-BACKEND_MODE: str = "statevector"  # "statevector" | "aer_simulator" | "ibm_simulator" | "ibm_hardware"
+BACKEND_MODE: str = "ibm_simulator"  # "statevector" | "aer_simulator" | "ibm_simulator" | "ibm_hardware"
 USE_IBM_SIMULATOR: bool = True  # if "ibm_*", prefer simulator?
 IBM_BACKEND_NAME: str | None = None  # explicit name or None = auto
 N_SHOTS: int = 1024
@@ -144,7 +144,14 @@ plot_data_distribution(
 # 2. Resolve backend
 # ──────────────────────────────────────────────────────────────────────
 backend = _get_backend()
-print(f"\nBackend mode: {BACKEND_MODE}")
+
+# Fallback to statevector if IBM backend could not be resolved
+actual_mode = BACKEND_MODE
+if backend is None and BACKEND_MODE.startswith("ibm"):
+    print("[main] No IBM backend available; falling back to statevector.")
+    actual_mode = "statevector"
+
+print(f"\nBackend mode: {actual_mode}")
 print(f"Backend object: {backend}")
 
 # ──────────────────────────────────────────────────────────────────────
@@ -157,7 +164,7 @@ print("=" * 60)
 training_results = train_all_ansatze(
     X_train_angle,
     y_train,
-    backend_mode=BACKEND_MODE,
+    backend_mode=actual_mode,
     backend=backend,
     optimizer="COBYLA",
     max_iter=MAX_ITER,
