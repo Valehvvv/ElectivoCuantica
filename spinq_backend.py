@@ -17,9 +17,12 @@ Requirements
 from __future__ import annotations
 
 import importlib.util
+import logging
 import sys
 import time
 from typing import Any
+
+logger = logging.getLogger("vqc.spinq")
 
 # ---------------------------------------------------------------------------
 # Environment guard (Fase 5)
@@ -91,10 +94,12 @@ def check_spinq_environment() -> None:
 
     if sys.version_info[:2] != _REQUIRED_PYTHON:
         running = f"{sys.version_info.major}.{sys.version_info.minor}"
-        print(
-            f"[spinq] aviso: probado en Python "
-            f"{_REQUIRED_PYTHON[0]}.{_REQUIRED_PYTHON[1]} segun el tutorial; "
-            f"intentando en Python {running}."
+        logger.warning(
+            "aviso: probado en Python %d.%d segun el tutorial; intentando en "
+            "Python %s.",
+            _REQUIRED_PYTHON[0],
+            _REQUIRED_PYTHON[1],
+            running,
         )
 
 
@@ -153,7 +158,7 @@ class SpinQNMRBackend:
 
             self._engine = get_nmr()
             self._compiler = get_compiler("native")
-            print(f"[spinq] Connected to NMR engine.")
+            logger.info("Connected to NMR engine.")
         except ImportError:
             raise ImportError(
                 "spinqit is not installed. "
@@ -224,7 +229,7 @@ class SpinQNMRBackend:
                 circ << (H, [qubits[tgt]])
 
             else:
-                print(f"[spinq] Warning: gate '{name}' skipped (not supported).")
+                logger.debug("gate '%s' skipped (not supported).", name)
 
         return circ
 
@@ -269,7 +274,7 @@ class SpinQNMRBackend:
             results.add(counts)
 
             if (idx + 1) % 10 == 0:
-                print(f"[spinq] Progress: {idx + 1}/{len(circuits)} circuits done.")
+                logger.info("Progress: %d/%d circuits done.", idx + 1, len(circuits))
 
         return results
 

@@ -75,6 +75,7 @@ def train_all_ansatze(
     optimizer: str = "COBYLA",
     max_iter: int = DEFAULT_MAX_ITER,
     n_shots: int = 1024,
+    registry: dict[str, tuple[Any, int]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Train Base, Reducido, and HEA on the same data with the same backend.
 
@@ -87,14 +88,18 @@ def train_all_ansatze(
     optimizer : str
     max_iter : int
     n_shots : int
+    registry : dict[name -> (builder_fn, n_params)], optional
+        Subset of ansätze to train. Defaults to ``models.ansatz_registry()``
+        (all three) when ``None``.
 
     Returns
     -------
     dict mapping ansatz name → training result dict.
     """
-    from models import ansatz_registry
+    if registry is None:
+        from models import ansatz_registry
 
-    registry = ansatz_registry()
+        registry = ansatz_registry()
     results: dict[str, dict[str, Any]] = {}
 
     for name, (builder, n_params) in registry.items():

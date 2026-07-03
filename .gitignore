@@ -26,6 +26,12 @@ results/*.png
 results/*.csv
 data/*.csv
 
+# Per-run, per-backend result directories (results/<backend_mode>/<run_id>/)
+results/*/
+
+# Structured logs (JSON lines, one file per run)
+logs/
+
 # Frozen regression baseline (Phase 0) - must be tracked so
 # tests/test_regression_baseline.py works on a fresh checkout.
 !results/baseline_statevector.csv
