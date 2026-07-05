@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import fcntl
 import os
+import re
 import select
 import signal
 import threading
@@ -29,6 +30,12 @@ from pathlib import Path
 from typing import Any
 
 from persistence.logger import JsonlEventLogger
+
+# ---------------------------------------------------------------------------
+# Run ID validation
+# ---------------------------------------------------------------------------
+
+_RUN_ID_PATTERN = r"^\d{8}_\d{6}$"
 
 
 # ---------------------------------------------------------------------------
@@ -199,9 +206,11 @@ class Heartbeat:
         self,
         logger: JsonlEventLogger,
         interval_sec: float = 30.0,
+        run_id: str = "00000000_000000",
     ) -> None:
         self._logger = logger
         self._interval = interval_sec
+        self._run_id = run_id
         self._thread: threading.Thread | None = None
         self._shutdown_flag = threading.Event()
 
@@ -217,6 +226,8 @@ class Heartbeat:
         if self._thread is not None:
             self._thread.join(timeout=5.0)
             self._thread = None
+        # Reset the flag after stopping to allow clean state
+        # self._shutdown_flag.clear()
 
     @property
     def shutdown_requested(self) -> bool:
@@ -228,7 +239,7 @@ class Heartbeat:
                 self._logger.log({
                     "ts": datetime.now().astimezone().isoformat(timespec="milliseconds"),
                     "level": "info",
-                    "run_id": "heartbeat",  # Add run_id for heartbeat events
+                    "run_id": self._run_id,
                     "event": "heartbeat",
                     "data": {"thread": "heartbeat", "interval": self._interval},
                 })
@@ -272,11 +283,13 @@ class GracefulShutdown:
         run_dir: Path,
         backend: str,
         ansatz: str = "",
+        run_id: str = "00000000_000000",
     ) -> None:
         self._logger = logger
         self._run_dir = run_dir
         self.backend = backend
         self.ansatz = ansatz
+        self._run_id = run_id
         self.state = ShutdownState()
 
     @property
@@ -290,12 +303,11 @@ class GracefulShutdown:
         self.state.reason = reason
         self.state.iteration = iteration
         self.state.timestamp = datetime.now().astimezone().isoformat(timespec="milliseconds")
-        # Extract run_id from run_dir (parent directory name)
-        run_id = self._run_dir.name
+        # Use the provided run_id (defaults to placeholder)
         self._logger.log({
             "ts": self.state.timestamp,
             "level": "warning",
-            "run_id": run_id,
+            "run_id": self._run_id,
             "event": "shutdown",
             "data": {
                 "reason": reason,

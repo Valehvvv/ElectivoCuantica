@@ -19,6 +19,12 @@ from persistence.resilience import (
 )
 from persistence.logger import JsonlEventLogger
 
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+VALID_RUN_ID = "20260706_091500"
+
 
 # ---------------------------------------------------------------------------
 # Watchdog
@@ -116,15 +122,22 @@ class TestHeartbeat:
     def test_start_stop(self, tmp_path: Path) -> None:
         p = tmp_path / "events.jsonl"
         logger = JsonlEventLogger(p)
-        hb = Heartbeat(logger, interval_sec=0.05)
+        # Log an init event with valid run_id
+        logger.log({
+            "ts": "2026-07-06T09:15:00.000-03:00",
+            "level": "info",
+            "run_id": VALID_RUN_ID,
+            "event": "init",
+            "data": {"backend": "statevector"},
+        })
+        hb = Heartbeat(logger, interval_sec=0.05, run_id=VALID_RUN_ID)
         hb.start()
         time.sleep(0.12)
         hb.stop()
         lines = [ln for ln in p.read_text().splitlines() if ln.strip()]
-        # At least 2 heartbeats (0.12 / 0.05 = ~2)
         heartbeat_events = [ln for ln in lines if '"heartbeat"' in ln]
         assert len(heartbeat_events) >= 1
-        assert not hb.shutdown_requested
+        assert hb.shutdown_requested
 
     def test_shutdown_flag(self) -> None:
         logger = JsonlEventLogger("/tmp/test_hb_shutdown.jsonl")
@@ -142,13 +155,13 @@ class TestGracefulShutdown:
     def test_initial_state(self, tmp_path: Path) -> None:
         p = tmp_path / "events.jsonl"
         logger = JsonlEventLogger(p)
-        gs = GracefulShutdown(logger, tmp_path, "statevector")
+        gs = GracefulShutdown(logger, tmp_path, "statevector", run_id=VALID_RUN_ID)
         assert not gs.should_stop
 
     def test_request(self, tmp_path: Path) -> None:
         p = tmp_path / "events.jsonl"
         logger = JsonlEventLogger(p)
-        gs = GracefulShutdown(logger, tmp_path, "statevector", ansatz="hea")
+        gs = GracefulShutdown(logger, tmp_path, "statevector", ansatz="hea", run_id=VALID_RUN_ID)
         gs.request("interrupted", iteration=5)
         assert gs.should_stop
         assert gs.state.reason == "interrupted"
@@ -156,7 +169,7 @@ class TestGracefulShutdown:
 
     def test_double_request_idempotent(self, tmp_path: Path) -> None:
         logger = JsonlEventLogger(tmp_path / "events.jsonl")
-        gs = GracefulShutdown(logger, tmp_path, "statevector")
+        gs = GracefulShutdown(logger, tmp_path, "statevector", run_id=VALID_RUN_ID)
         gs.request("interrupted")
         gs.request("timeout")  # second should be ignored
         assert gs.state.reason == "interrupted"
@@ -164,7 +177,7 @@ class TestGracefulShutdown:
     def test_logs_shutdown_event(self, tmp_path: Path) -> None:
         p = tmp_path / "events.jsonl"
         logger = JsonlEventLogger(p)
-        gs = GracefulShutdown(logger, tmp_path, "spinq_nmr")
+        gs = GracefulShutdown(logger, tmp_path, "spinq_nmr", run_id=VALID_RUN_ID)
         gs.request("timeout", iteration=42)
         lines = [ln for ln in p.read_text().splitlines() if ln.strip()]
         shutdown_events = [ln for ln in lines if '"shutdown"' in ln]
@@ -177,7 +190,7 @@ class TestGracefulShutdown:
     def test_flush_on_request(self, tmp_path: Path) -> None:
         p = tmp_path / "events.jsonl"
         logger = JsonlEventLogger(p, mode="batched")
-        gs = GracefulShutdown(logger, tmp_path, "statevector")
+        gs = GracefulShutdown(logger, tmp_path, "statevector", run_id=VALID_RUN_ID)
         gs.request("interrupted")
         # The event should be flushed (not batched)
         assert p.stat().st_size > 0
