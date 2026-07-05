@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cuantica.local/schemas/events.schema.json",
+  "title": "vqc-event",
+  "description": "Single event line in events.jsonl. RFC 3339 timestamps with timezone offset. Backend-agnostic.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["ts", "level", "run_id", "event"],
+  "properties": {
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 with TZ offset, e.g. 2026-07-06T09:15:00.123-03:00",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{2}:\\d{2}$"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["debug", "info", "warning", "error", "critical"]
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^\\d{8}_\\d{6}$",
+      "description": "Timestamp-based id, e.g. 20260706_091500"
+    },
+    "event": {
+      "type": "string",
+      "enum": [
+        "init", "preflight_start", "preflight_ok", "preflight_failed",
+        "calibration_done", "phase_start", "phase_end",
+        "ansatz_start", "iter", "ansatz_end",
+        "eval_start", "eval_end",
+        "heartbeat", "signal", "watchdog_timeout", "shutdown", "complete"
+      ]
+    },
+    "ansatz": {
+      "type": ["string", "null"],
+      "enum": ["Base", "Reducido", "HEA", null]
+    },
+    "iter": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "data": {
+      "type": "object",
+      "description": "Event-specific payload. Schema is intentionally open: each event type defines its own data shape, but the field is always an object (or absent)."
+    }
+  }
+}

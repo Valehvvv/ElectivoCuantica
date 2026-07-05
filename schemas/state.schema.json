@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cuantica.local/schemas/state.schema.json",
+  "title": "vqc-run-state",
+  "description": "Snapshot of a VQC run. Derived from events.jsonl at phase boundaries.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "run_id", "status", "config"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "run_id": {"type": "string", "pattern": "^\\d{8}_\\d{6}$"},
+    "status": {"type": "string", "enum": ["running", "completed", "interrupted", "failed"]},
+    "interrupted_at_phase": {"type": ["string", "null"]},
+    "interrupted_at_ansatz": {"type": ["string", "null"]},
+    "interrupted_at_iter": {"type": ["integer", "null"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "config": {
+      "type": "object",
+      "required": ["backend_requested", "max_iter", "n_shots", "random_state", "ansatze", "optimizers"],
+      "properties": {
+        "backend_requested": {"type": "string"},
+        "backend_resolved": {"type": ["string", "null"]},
+        "max_iter": {"type": "integer", "minimum": 1},
+        "n_shots": {"type": "integer", "minimum": 1},
+        "random_state": {"type": "integer"},
+        "ansatze": {"type": "array", "items": {"type": "string", "enum": ["Base", "Reducido", "HEA"]}, "minItems": 1},
+        "optimizers": {"type": "array", "items": {"type": "string", "enum": ["COBYLA", "SPSA"]}, "minItems": 1},
+        "endianness": {"type": ["string", "null"], "enum": ["little", "big", null]}
+      }
+    },
+    "hardware": {
+      "type": "object",
+      "properties": {
+        "spinqit_version": {"type": ["string", "null"]},
+        "qiskit_ibm_version": {"type": ["string", "null"]},
+        "shots_per_sec": {"type": ["number", "null"], "minimum": 0},
+        "calibration_circuit": {"type": ["string", "null"]},
+        "native_gate_set": {"type": "array", "items": {"type": "string"}},
+        "transpiled_depth_per_ansatz": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+        "two_qubit_gates_transpiled_per_ansatz": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}
+      }
+    },
+    "phases": {
+      "type": "object",
+      "description": "phase → {status, started_at, ended_at, duration_sec, ansatze}",
+      "additionalProperties": true
+    },
+    "results": {
+      "type": "object",
+      "description": "ansatz → {metrics, loss_history_path, theta_path, eval_metrics}",
+      "additionalProperties": true
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ts", "where", "what"],
+        "properties": {
+          "ts": {"type": "string", "format": "date-time"},
+          "where": {"type": "string"},
+          "what": {"type": "string"},
+          "traceback": {"type": "string"}
+        }
+      }
+    }
+  }
+}
