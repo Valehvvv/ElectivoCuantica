@@ -29,7 +29,7 @@ from backends import (
     IBMBackend,
     QuantumBackend,
     SpinQBackend,
-    StatevectorBackend,
+    StatevectorBackend as ContractStatevectorBackend,
     get_backend,
 )
 from circuits import create_reduced_ansatz
@@ -64,7 +64,7 @@ class FakeBackend(QuantumBackend):
 # ---------------------------------------------------------------------------
 def test_factory_statevector_mode():
     backend = get_backend("statevector")
-    assert isinstance(backend, StatevectorBackend)
+    assert isinstance(backend, ContractStatevectorBackend)
 
 
 def test_factory_aer_mode():
@@ -181,7 +181,7 @@ def test_number_of_backend_calls_independent_of_sample_count():
 # ---------------------------------------------------------------------------
 def test_vqc_default_construction_resolves_statevector_backend():
     vqc = VQC(ansatz_fn=create_reduced_ansatz, n_params=4)
-    assert isinstance(vqc._quantum_backend, StatevectorBackend)
+    assert isinstance(vqc._quantum_backend, ContractStatevectorBackend)
 
 
 def test_vqc_construction_resolves_backend_from_mode_string():
@@ -214,7 +214,7 @@ def test_statevector_backend_matches_manual_expectation_value():
         for qc in (qc1, qc2)
     ]
 
-    backend = StatevectorBackend()
+    backend = ContractStatevectorBackend()
     actual = backend.expectations([qc1, qc2])
 
     assert actual == pytest.approx(expected)

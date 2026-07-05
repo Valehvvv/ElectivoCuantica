@@ -1,0 +1,2 @@
+Ansatz,Backend,Accuracy,Precision,Recall,F1,ROC_AUC,Depth,Gate_Count,Two_Qubit_Gates,Training_Time_sec,Inference_Time_sec,Total_Time_sec,Shots,Date
+HEA,statevector,0.75,0.7272727272727273,0.8,0.7619047619047619,0.87,2,3,1,0.022574814999643422,0.011378808000699792,0.033953623000343214,1024,2026-07-03T12:15:48.144600

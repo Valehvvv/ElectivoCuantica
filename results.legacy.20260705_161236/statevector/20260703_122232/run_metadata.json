@@ -1,0 +1,17 @@
+{
+  "run_id": "20260703_122232",
+  "backend_mode": "statevector",
+  "actual_mode": "statevector",
+  "MAX_ITER": 3,
+  "N_SHOTS": 1024,
+  "n_train": 10,
+  "n_test": 20,
+  "RANDOM_STATE": 42,
+  "ansatze": [
+    "HEA"
+  ],
+  "endianness": "little",
+  "git_commit": "b9c40c2",
+  "spinqit_version": null,
+  "duracion_total_seg": 1.2868574040003296
+}

@@ -1,0 +1,19 @@
+{
+  "run_id": "20260703_121553",
+  "backend_mode": "spinq_nmr",
+  "actual_mode": "statevector",
+  "MAX_ITER": 200,
+  "N_SHOTS": 1024,
+  "n_train": 80,
+  "n_test": 20,
+  "RANDOM_STATE": 42,
+  "ansatze": [
+    "Base",
+    "Reducido",
+    "HEA"
+  ],
+  "endianness": "little",
+  "git_commit": "b9c40c2",
+  "spinqit_version": null,
+  "duracion_total_seg": 14.183441873000447
+}

@@ -1,0 +1,24 @@
+{"ts":"2026-07-05T21:22:30.759+00:00","level":"info","run_id":"20250705_171000","event":"init","backend":"statevector","pilot":true}
+{"ts":"2026-07-05T21:22:30.759+00:00","level":"error","run_id":"20250705_171000","event":"preflight_failed","error":"run_preflight() missing 1 required positional argument: 'events_path'"}
+{"ts":"2026-07-05T21:22:30.795+00:00","level":"info","run_id":"20250705_171000","event":"init","backend":"spinq_nmr","pilot":false}
+{"ts":"2026-07-05T21:22:30.795+00:00","level":"error","run_id":"20250705_171000","event":"preflight_failed","error":"run_preflight() missing 1 required positional argument: 'events_path'"}
+{"ts":"2026-07-05T21:22:46.586+00:00","level":"info","run_id":"20250705_171000","event":"init","backend":"statevector","pilot":true}
+{"ts":"2026-07-05T17:22:46.586-04:00","level":"info","run_id":"20250705_171000","event":"preflight_start","data":{"backend":"statevector"}}
+{"ts":"2026-07-05T17:22:46.589-04:00","level":"info","run_id":"20250705_171000","event":"preflight_ok","data":{"backend":"statevector","sdk_version":"2.5.0"}}
+{"ts":"2026-07-05T21:22:46.595+00:00","level":"info","run_id":"20250705_171000","event":"preflight_ok"}
+{"ts":"2026-07-05T21:22:46.597+00:00","level":"info","run_id":"20250705_171000","event":"init","backend":"spinq_nmr","pilot":false}
+{"ts":"2026-07-05T17:22:46.597-04:00","level":"info","run_id":"20250705_171000","event":"preflight_start","data":{"backend":"spinq_nmr"}}
+{"ts":"2026-07-05T17:22:46.603-04:00","level":"error","run_id":"20250705_171000","event":"preflight_failed","data":{"backend":"spinq_nmr","reason":"spinqit not importable. Required for BACKEND_MODE=spinq_nmr. Install from the .whl provided by the professor. See docs/spinq_setup.md."}}
+{"ts":"2026-07-05T21:22:46.609+00:00","level":"info","run_id":"20250705_171000","event":"preflight_ok"}
+{"ts":"2026-07-05T21:23:03.166+00:00","level":"info","run_id":"20250705_171000","event":"init","backend":"spinq_nmr","pilot":false}
+{"ts":"2026-07-05T17:23:03.167-04:00","level":"info","run_id":"20250705_171000","event":"preflight_start","data":{"backend":"spinq_nmr"}}
+{"ts":"2026-07-05T17:23:03.173-04:00","level":"error","run_id":"20250705_171000","event":"preflight_failed","data":{"backend":"spinq_nmr","reason":"spinqit not importable. Required for BACKEND_MODE=spinq_nmr. Install from the .whl provided by the professor. See docs/spinq_setup.md."}}
+{"ts":"2026-07-05T21:23:03.175+00:00","level":"info","run_id":"20250705_171000","event":"preflight_ok"}
+{"ts":"2026-07-05T21:28:58.332+00:00","level":"info","run_id":"20250705_171000","event":"init","backend":"statevector","pilot":true}
+{"ts":"2026-07-05T17:28:58.332-04:00","level":"info","run_id":"20250705_171000","event":"preflight_start","data":{"backend":"statevector"}}
+{"ts":"2026-07-05T17:28:58.338-04:00","level":"info","run_id":"20250705_171000","event":"preflight_ok","data":{"backend":"statevector","sdk_version":"2.5.0"}}
+{"ts":"2026-07-05T21:28:58.341+00:00","level":"info","run_id":"20250705_171000","event":"preflight_ok"}
+{"ts":"2026-07-05T21:28:58.342+00:00","level":"info","run_id":"20250705_171000","event":"init","backend":"spinq_nmr","pilot":false}
+{"ts":"2026-07-05T17:28:58.342-04:00","level":"info","run_id":"20250705_171000","event":"preflight_start","data":{"backend":"spinq_nmr"}}
+{"ts":"2026-07-05T17:28:58.346-04:00","level":"error","run_id":"20250705_171000","event":"preflight_failed","data":{"backend":"spinq_nmr","reason":"spinqit not importable. Required for BACKEND_MODE=spinq_nmr. Install from the .whl provided by the professor. See docs/spinq_setup.md."}}
+{"ts":"2026-07-05T21:28:58.349+00:00","level":"info","run_id":"20250705_171000","event":"preflight_ok"}
