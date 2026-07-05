@@ -134,3 +134,23 @@ class TestDurableIteration:
         assert state["status"] in ("completed", "running")
         assert "config" in state
         assert "phases" in state
+
+    def test_spsa_method(self, run_dir: Path) -> None:
+        logger = JsonlEventLogger(run_dir / "events.jsonl")
+        loop = DurableIteration(
+            run_dir=run_dir,
+            ansatz="test_spsa",
+            backend="statevector",
+            cost_fn=parabola_cost,
+            theta0=np.array([2.0]),
+            n_params=1,
+            logger=logger,
+            method="spsa",
+            max_iter=30,
+            tol=1e-10,
+            progress_bar=False,
+        )
+        result = loop.run()
+        assert result["success"]
+        assert result["final_cost"] < 0.5
+        assert result["n_iter"] > 0
