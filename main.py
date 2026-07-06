@@ -81,6 +81,18 @@ if BACKEND_MODE == "qryd" and not os.environ.get("MAX_ITER"):
     MAX_ITER = 15
 if BACKEND_MODE == "qryd" and not os.environ.get("N_TRAIN"):
     N_TRAIN = 10
+
+# SpinQ NMR is very slow (~7s/circuit train, ~35s/circuit eval).
+# Reduce workload to fit in ~15 min.
+N_TEST: int | None = (
+    int(os.environ.get("N_TEST")) if os.environ.get("N_TEST") else None
+)
+if BACKEND_MODE == "spinq_nmr" and not os.environ.get("MAX_ITER"):
+    MAX_ITER = 1
+if BACKEND_MODE == "spinq_nmr" and not os.environ.get("N_TRAIN"):
+    N_TRAIN = 3
+if BACKEND_MODE == "spinq_nmr" and not os.environ.get("N_TEST"):
+    N_TEST = 3
 _ANSATZ_ENV = os.environ.get("ANSATZ")  # comma-separated names, e.g. "HEA,Base"
 ANSATZ_FILTER: list[str] | None = (
     [a.strip() for a in _ANSATZ_ENV.split(",") if a.strip()] if _ANSATZ_ENV else None
@@ -192,9 +204,9 @@ X_train_angle, X_test_angle, angle_scaler = normalize_to_pi(X_train_2d, X_test_2
 # CONFIGURATION block above). Keeps class balance and stays reproducible
 # via RANDOM_STATE.
 if N_TRAIN is not None and N_TRAIN < len(X_train_angle):
-    from sklearn.model_selection import train_test_split as _tts
+    from sklearn.model_selection import train_test_split as _tts_train
 
-    X_train_angle, _, y_train, _ = _tts(
+    X_train_angle, _, y_train, _ = _tts_train(
         X_train_angle,
         y_train,
         train_size=N_TRAIN,
@@ -205,6 +217,23 @@ if N_TRAIN is not None and N_TRAIN < len(X_train_angle):
         "N_TRAIN override applied: using %d/%d stratified training samples",
         len(X_train_angle),
         N_TRAIN,
+    )
+
+# Optional stratified subsample of the test set (N_TEST override).
+if N_TEST is not None and N_TEST < len(X_test_angle):
+    from sklearn.model_selection import train_test_split as _tts_test
+
+    X_test_angle, _, y_test, _ = _tts_test(
+        X_test_angle,
+        y_test,
+        train_size=N_TEST,
+        random_state=RANDOM_STATE,
+        stratify=y_test,
+    )
+    log.info(
+        "N_TEST override applied: using %d/%d stratified test samples",
+        len(X_test_angle),
+        N_TEST,
     )
 
 log.info("Train shape: %s | Test shape: %s", X_train_angle.shape, X_test_angle.shape)
