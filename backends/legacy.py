@@ -37,6 +37,7 @@ backend-mode strings.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
@@ -44,7 +45,13 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 from qiskit.quantum_info.operators import SparsePauliOp
 
-from config import BACKEND_ENDIANNESS, DEFAULT_ENDIANNESS, DEFAULT_SHOTS, OBSERVABLE_PAULI
+from config import (
+    BACKEND_ENDIANNESS,
+    DEFAULT_ENDIANNESS,
+    DEFAULT_SHOTS,
+    IBM_MAX_EXECUTION_TIME,
+    OBSERVABLE_PAULI,
+)
 from observable import expectation_z_qubit0_from_counts
 
 
@@ -184,6 +191,7 @@ class IBMBackend(QuantumBackend):
         self._backend = backend
         self._n_shots = n_shots
         self._observable = SparsePauliOp.from_list([(OBSERVABLE_PAULI, 1)])
+        self.usage_log: list[dict] = []
 
     def expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
         if not circuits:
@@ -200,9 +208,30 @@ class IBMBackend(QuantumBackend):
             isa_observable = self._observable.apply_layout(isa_circuit.layout)
             pubs.append((isa_circuit, isa_observable))
 
-        estimator = EstimatorV2(mode=self._backend, options={"default_shots": self._n_shots})
+        estimator = EstimatorV2(
+            mode=self._backend,
+            options={
+                "default_shots": self._n_shots,
+                "max_execution_time": IBM_MAX_EXECUTION_TIME,
+            },
+        )
         job = estimator.run(pubs)  # single batched job for the whole call
         result = job.result()
+        try:
+            job_id = job.job_id()
+        except Exception:
+            job_id = None
+        try:
+            usage = job.metrics()["usage"]
+        except Exception:
+            usage = None
+        self.usage_log.append(
+            {
+                "job_id": job_id,
+                "usage": usage,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
         return [float(np.real(pub_result.data.evs)) for pub_result in result]
 
 

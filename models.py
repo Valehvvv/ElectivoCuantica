@@ -87,6 +87,11 @@ class VQC:
         self.history_: list[float] = []
         self.training_time_: float = 0.0
 
+    @property
+    def usage_log(self) -> list[dict]:
+        """Per-job IBM Runtime usage records; [] for backends that don't track usage."""
+        return getattr(self._quantum_backend, "usage_log", [])
+
     # ------------------------------------------------------------------
     # Internal: batched expectation value computation
     # ------------------------------------------------------------------

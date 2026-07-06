@@ -101,6 +101,7 @@ IBMQ_TOKEN: str = os.environ.get("IBMQ_TOKEN", "")
 IBMQ_INSTANCE: str = os.environ.get("IBMQ_INSTANCE", "")  # dejar vacío para plan Open
 IBMQ_BACKEND_SIMULATOR: str = "ibmq_qasm_simulator"
 IBMQ_BACKEND_HARDWARE: str = "ibm_fez"
+IBM_MAX_EXECUTION_TIME: int = int(os.environ.get("IBM_MAX_EXECUTION_TIME", "60"))
 
 # ---------------------------------------------------------------------------
 # SpinQ NMR configuration

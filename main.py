@@ -389,6 +389,12 @@ def _pkg_version(name: str) -> str | None:
 
 _ibm_backend_name = getattr(backend, "name", None) if actual_mode.startswith("ibm") else None
 
+_ibm_usage_log = (
+    [rec for tres in training_results.values() for rec in tres["vqc"].usage_log]
+    if actual_mode.startswith("ibm")
+    else []
+)
+
 run.write_metadata(
     {
         "run_id": run.run_id,
@@ -409,6 +415,7 @@ run.write_metadata(
         "class_pair": list(CLASS_PAIR),
         "observable_pauli": OBSERVABLE_PAULI,
         "ibm_backend_name": _ibm_backend_name,
+        "ibm_usage_log": _ibm_usage_log,
         "python_version": sys.version.split()[0],
         "qiskit_version": _pkg_version("qiskit"),
         "qiskit_aer_version": _pkg_version("qiskit-aer"),
