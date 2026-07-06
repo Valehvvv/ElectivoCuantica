@@ -6,7 +6,9 @@ only the test set predictions on ibm_fez (or other available QPU).
 
 from __future__ import annotations
 
-from main import _get_backend
+import os
+
+from ibm_runtime import get_ibm_runtime_service, select_backend
 from config import CLASS_NAMES, RESULTS_DIR
 from dataset import load_angles_from_csv
 from evaluation import evaluate_model, structural_info
@@ -21,11 +23,17 @@ X_train, X_test, y_train, y_test = load_angles_from_csv(
     DATA_DIR / "test_angles.csv",
 )
 
-# Set IBM hardware mode
-import main as main_module
+# Resolve IBM backend. IBM_FAKE=1 uses a local fake backend (Aer noise
+# model from ibm_fez calibration snapshot) — full dress rehearsal of the
+# EstimatorV2/ISA-transpilation path at zero QPU cost.
+if os.environ.get("IBM_FAKE") == "1":
+    from qiskit_ibm_runtime.fake_provider import FakeFez
 
-main_module.BACKEND_MODE = "ibm_hardware"
-backend = _get_backend()
+    backend = FakeFez()
+    print("IBM_FAKE=1: using local FakeFez (no QPU jobs will be submitted)")
+else:
+    service = get_ibm_runtime_service()
+    backend = select_backend(service) if service is not None else None
 print(f"Backend: {backend}")
 
 if backend is None:
@@ -61,5 +69,7 @@ for name, tres in results.items():
     print(f"  F1:       {metrics['f1']:.4f}")
     print(f"  ROC AUC:  {metrics['roc_auc']:.4f}")
     print(f"  Inference time: {metrics['inference_time_sec']:.2f} s")
+    for rec in vqc_ibm.usage_log:
+        print(f"  Job {rec['job_id']}: usage={rec['usage']}")
 
 print("\nDone.")
