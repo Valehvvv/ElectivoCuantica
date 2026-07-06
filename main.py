@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import os
+import sys
 import time
 from datetime import datetime
 
@@ -29,6 +30,8 @@ from config import (
     CLASS_NAMES,
     CLASS_PAIR,
     DATA_DIR,
+    INITIAL_THETA_RANGE,
+    OBSERVABLE_PAULI,
     RANDOM_STATE,
     TEST_SIZE,
 )
@@ -376,6 +379,16 @@ if actual_mode == "spinq_nmr":
     except importlib.metadata.PackageNotFoundError:
         _spinqit_version = None
 
+
+def _pkg_version(name: str) -> str | None:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+_ibm_backend_name = getattr(backend, "name", None) if actual_mode.startswith("ibm") else None
+
 run.write_metadata(
     {
         "run_id": run.run_id,
@@ -390,6 +403,16 @@ run.write_metadata(
         "endianness": BACKEND_ENDIANNESS.get(actual_mode),
         "git_commit": git_commit_hash(),
         "spinqit_version": _spinqit_version,
+        "optimizer": "COBYLA",
+        "initial_theta_range": list(INITIAL_THETA_RANGE),
+        "test_size": TEST_SIZE,
+        "class_pair": list(CLASS_PAIR),
+        "observable_pauli": OBSERVABLE_PAULI,
+        "ibm_backend_name": _ibm_backend_name,
+        "python_version": sys.version.split()[0],
+        "qiskit_version": _pkg_version("qiskit"),
+        "qiskit_aer_version": _pkg_version("qiskit-aer"),
+        "qiskit_ibm_runtime_version": _pkg_version("qiskit-ibm-runtime"),
         "duracion_total_seg": _duration_sec,
     }
 )

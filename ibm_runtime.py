@@ -97,8 +97,8 @@ def select_backend(
 ) -> Any | None:
     """Select a specific backend from an IBM service.
 
-    If ``backend_name`` is ``None``, auto-select the first available
-    simulator or QPU depending on ``simulator``.
+    If ``backend_name`` is ``None``, auto-select least-busy operational
+    QPU (or first available simulator) depending on ``simulator``.
 
     Parameters
     ----------
@@ -138,6 +138,12 @@ def select_backend(
             return backend
         print("[ibm_runtime] No simulator found, using first available backend.")
 
+    try:
+        backend = service.least_busy(operational=True, simulator=False, min_num_qubits=2)
+        print(f"[ibm_runtime] Auto-selected least-busy QPU: {backend.name}")
+        return backend
+    except Exception as exc:
+        print(f"[ibm_runtime] least_busy failed ({exc!r}), falling back to first QPU.")
     real_backends = [b for b in all_backends if not b.simulator]
     if real_backends:
         backend = real_backends[0]
