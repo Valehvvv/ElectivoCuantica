@@ -2,8 +2,8 @@
 
 Proyecto universitario de Computación Cuántica. Compara tres arquitecturas
 variacionales (Base, Reducido, HEA) para clasificación binaria sobre el
-dataset Iris (Versicolor vs. Virginica), preparado para ejecución tanto en
-simulación local como en hardware cuántico real de IBM Quantum.
+dataset Iris (Versicolor vs. Virginica), ejecutado en múltiples plataformas
+cuánticas: simulación local, QRydDemo, SpinQ NMR (universidad) e IBM Quantum.
 
 ## Estructura del proyecto
 
@@ -24,6 +24,8 @@ electivo/
 ├── evaluation.py                  # Métricas de clasificación y estructurales
 ├── visualization.py               # Generación automática de gráficos
 ├── ibm_runtime.py                 # Integración con IBM Quantum
+├── qryd_backend.py                # Integración con QRydDemo (Rydberg)
+├── spinq_backend.py               # Integración con SpinQ NMR (universidad)
 └── main.py                        # Entry point del pipeline completo
 ```
 
@@ -69,6 +71,7 @@ BACKEND_MODE = "aer_simulator"  # Qiskit Aer local
 BACKEND_MODE = "ibm_simulator"  # Simulador IBM Quantum cloud
 BACKEND_MODE = "ibm_hardware"   # Hardware cuántico real IBM
 BACKEND_MODE = "spinq_nmr"      # SpinQ NMR 2-qubit (computador U)
+BACKEND_MODE = "qryd"           # QRydDemo (emulador de Rydberg)
 ```
 
 ### Configuración para SpinQ NMR (computador cuántico de la universidad)
@@ -101,6 +104,35 @@ python main.py
 Si el entorno 3.9 + `spinqit` no está disponible, `main.py` lo detecta
 con un mensaje explícito (ver `spinq_backend.check_spinq_environment`) y
 hace *fallback* a `statevector` en vez de fallar silenciosamente.
+
+### Configuración para QRydDemo (emulador de átomos de Rydberg)
+
+`qiskit-qryd-provider` requiere Qiskit 1.x (incompatible con Qiskit 2.x del
+entorno principal), por lo que necesita un entorno conda separado:
+
+```bash
+conda create --name qryd_env python=3.11 -y
+conda activate qryd_env
+pip install "qiskit>=1.0,<2" qiskit-qryd-provider pandas scikit-learn matplotlib scipy
+```
+
+Configurar `.env` con el token de QRydDemo (obtenerlo en
+https://theqturer.qryddemo.com):
+
+```env
+QRYD_API_TOKEN=tu-token-aqui
+QRYD_BACKEND_NAME=qryd_emulator$square
+```
+
+Cambiar `BACKEND_MODE = "qryd"` en `main.py` y ejecutar:
+
+```bash
+python main.py
+```
+
+> **Nota**: QRydDemo tiene una cuota diaria de 5000 unidades. El proyecto
+> reduce automáticamente las iteraciones y muestras de entrenamiento cuando
+> `BACKEND_MODE = "qryd"` para no superar el límite.
 
 ### Configuración para IBM Quantum
 

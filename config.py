@@ -115,8 +115,8 @@ SPINQ_TASK_NAME: str = os.environ.get("SPINQ_TASK_NAME", "VQC-Experiment")
 # ---------------------------------------------------------------------------
 # QRydDemo configuration
 # ---------------------------------------------------------------------------
-QRYD_TOKEN: str = os.environ.get("QRYD_TOKEN", "")
-QRYD_BACKEND_NAME: str = os.environ.get("QRYD_BACKEND_NAME", "rydberg_simulator")
+QRYD_TOKEN: str = os.environ.get("QRYD_API_TOKEN", "")
+QRYD_BACKEND_NAME: str = os.environ.get("QRYD_BACKEND_NAME", "qryd_emulator$square")
 
 # ---------------------------------------------------------------------------
 # Training

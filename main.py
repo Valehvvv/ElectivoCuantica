@@ -73,6 +73,14 @@ N_TRAIN: int | None = (
 )  # if set, use a stratified/class-balanced subsample of size N_TRAIN from
 # the training set (seeded with RANDOM_STATE for reproducibility) instead
 # of the full training set
+
+# QRydDemo has a limited API quota (~5000 tokens). Reduce workload
+# automatically so all 3 ansätze fit within the budget.
+# Budget: ~10 samples × 15 iter × 2 evals × 3 ansätze ≈ 900 calls
+if BACKEND_MODE == "qryd" and not os.environ.get("MAX_ITER"):
+    MAX_ITER = 15
+if BACKEND_MODE == "qryd" and not os.environ.get("N_TRAIN"):
+    N_TRAIN = 10
 _ANSATZ_ENV = os.environ.get("ANSATZ")  # comma-separated names, e.g. "HEA,Base"
 ANSATZ_FILTER: list[str] | None = (
     [a.strip() for a in _ANSATZ_ENV.split(",") if a.strip()] if _ANSATZ_ENV else None

@@ -246,6 +246,58 @@ class SpinQBackend(QuantumBackend):
 
 
 # ---------------------------------------------------------------------------
+# QRydDemo (Rydberg emulator, 1 circuit per job)
+# ---------------------------------------------------------------------------
+class QRydBackend(QuantumBackend):
+    """QRydDemo backend using ``qiskit_qryd_provider``.
+
+    QRydDemo's emulator only supports **one circuit per job**
+    (``max_circuits = 1``), so this adapter loops over the batch and
+    submits each circuit individually. Compilation to the Rydberg
+    gate set happens on QRydDemo's servers.
+
+    All circuits passed to :meth:`expectations` are transpiled and
+    submitted one at a time via ``backend.run(transpile(qc, backend))``.
+    """
+
+    def __init__(
+        self,
+        backend: Any,
+        n_shots: int = DEFAULT_SHOTS,
+        endianness: str = "little",
+    ) -> None:
+        if backend is None:
+            raise ValueError("QRydBackend requires a configured QRydDemo backend instance.")
+        self._backend = backend
+        self._n_shots = n_shots
+        self._endianness = endianness
+
+    def expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
+        if not circuits:
+            return []
+
+        from qiskit import transpile
+
+        results: list[float] = []
+        for i, qc in enumerate(circuits):
+            measured = qc.copy()
+            measured.measure_all()
+
+            tqc = transpile(measured, self._backend)
+            job = self._backend.run(tqc, shots=self._n_shots)
+            result = job.result()
+            counts = result.get_counts()
+            results.append(
+                expectation_z_qubit0_from_counts(counts, self._endianness)
+            )
+
+            if (i + 1) % 10 == 0:
+                print(f"[qryd] Progress: {i + 1}/{len(circuits)} circuits done.")
+
+        return results
+
+
+# ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 def get_backend(
@@ -286,6 +338,9 @@ def get_backend(
 
     if backend_mode.startswith("ibm"):
         return IBMBackend(backend, n_shots=n_shots)
+
+    if backend_mode == "qryd":
+        return QRydBackend(backend, n_shots=n_shots, endianness=endianness)
 
     # Aer simulator and any other legacy Qiskit-style backend.
     return AerBackend(backend, n_shots=n_shots, endianness=endianness)

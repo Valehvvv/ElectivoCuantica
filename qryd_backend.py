@@ -3,46 +3,46 @@
 Provides utilities to authenticate, select backends, and execute circuits
 on the QRydDemo platform (trapped Rydberg atom quantum computing).
 
-Uses ``qiskit_qryd`` provider when available, with graceful fallback.
+Uses ``qiskit_qryd_provider`` package when available, with graceful fallback.
 
 Exported functions
 ------------------
 - ``get_qryd_provider`` : obtain a configured QRydDemo provider
 - ``select_qryd_backend`` : select a backend from the provider
-- ``run_on_qryd`` : submit and retrieve job results
+- ``create_qryd_backend`` : factory that connects and returns a backend
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from qiskit import QuantumCircuit, transpile
-
-from config import QRYD_BACKEND_NAME, QRYD_TOKEN
-
 
 def get_qryd_provider() -> Any | None:
     """Return a QRydDemo provider instance.
 
-    Requires ``qiskit_qryd`` package and a valid ``QRYD_TOKEN``.
+    Requires ``qiskit_qryd_provider`` package and a valid ``QRYD_API_TOKEN``.
 
     Returns
     -------
     Provider instance or ``None`` if unavailable.
     """
-    if not QRYD_TOKEN:
-        print("[qryd] QRYD_TOKEN is not set. Add it to .env")
+    import os
+
+    token = os.environ.get("QRYD_API_TOKEN", "")
+    if not token:
+        print("[qryd] QRYD_API_TOKEN is not set. Add it to .env")
         return None
 
     try:
-        from qiskit_qryd import QRydProvider
+        from qiskit_qryd_provider import QRydProvider
 
-        provider = QRydProvider(token=QRYD_TOKEN)
+        provider = QRydProvider(token)
         print("[qryd] Connected via QRydProvider.")
         return provider
     except ImportError:
         print(
-            "[qryd] qiskit-qryd not installed. Install with: pip install qiskit-qryd"
+            "[qryd] qiskit-qryd-provider not installed. "
+            "Install with: pip install qiskit-qryd-provider"
         )
         return None
     except Exception as exc:
@@ -51,16 +51,7 @@ def get_qryd_provider() -> Any | None:
 
 
 def list_available_backends(provider: Any) -> list[str]:
-    """Return a list of backend names available via this provider.
-
-    Parameters
-    ----------
-    provider : QRydProvider instance.
-
-    Returns
-    -------
-    list[str]
-    """
+    """Return a list of backend names available via this provider."""
     if provider is None:
         return []
     try:
@@ -79,8 +70,8 @@ def select_qryd_backend(
     ----------
     provider : QRydProvider instance.
     backend_name : str, optional
-        Explicit backend name. If ``None``, uses ``QRYD_BACKEND_NAME``
-        from config.
+        Explicit backend name (e.g. ``"qryd_emulator$square"``).
+        If ``None``, uses ``QRYD_BACKEND_NAME`` from config.
 
     Returns
     -------
@@ -89,8 +80,10 @@ def select_qryd_backend(
     if provider is None:
         return None
 
+    import os
+
     if backend_name is None:
-        backend_name = QRYD_BACKEND_NAME
+        backend_name = os.environ.get("QRYD_BACKEND_NAME", "qryd_emulator$square")
 
     try:
         backend = provider.get_backend(backend_name)
@@ -108,54 +101,6 @@ def select_qryd_backend(
         return backend
 
 
-def transpile_for_qryd(
-    qc: QuantumCircuit,
-    backend: Any,
-    optimization_level: int = 3,
-) -> QuantumCircuit:
-    """Transpile a circuit for a specific QRydDemo backend.
-
-    Parameters
-    ----------
-    qc : QuantumCircuit
-    backend : Backend instance.
-    optimization_level : int
-
-    Returns
-    -------
-    QuantumCircuit
-    """
-    try:
-        tqc = transpile(qc, backend=backend, optimization_level=optimization_level)
-    except Exception:
-        tqc = transpile(qc, optimization_level=optimization_level)
-    return tqc
-
-
-def run_on_qryd(
-    qc: QuantumCircuit,
-    backend: Any,
-    shots: int = 1024,
-) -> dict[str, int]:
-    """Run a circuit on a QRydDemo backend and return counts.
-
-    Parameters
-    ----------
-    qc : QuantumCircuit
-        Circuit **with measurements**.
-    backend : Backend instance.
-    shots : int
-
-    Returns
-    -------
-    dict[str, int] counts.
-    """
-    tqc = transpile_for_qryd(qc, backend)
-    job = backend.run(tqc, shots=shots)
-    result = job.result()
-    return result.get_counts()
-
-
 def create_qryd_backend(
     backend_name: str | None = None,
 ) -> Any | None:
@@ -164,7 +109,7 @@ def create_qryd_backend(
     Parameters
     ----------
     backend_name : str, optional
-        Explicit backend name.
+        Explicit backend name (e.g. ``"qryd_emulator$square"``).
 
     Returns
     -------
