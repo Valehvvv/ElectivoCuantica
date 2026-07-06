@@ -91,6 +91,7 @@ BACKEND_ENDIANNESS: dict[str, str] = {
     "ibm_simulator": "little",
     "ibm_hardware": "little",
     "spinq_nmr": "big",  # TODO: verify on real SpinQ NMR hardware
+    "qryd": "little",  # QRydDemo uses Qiskit's standard little-endian
 }
 DEFAULT_ENDIANNESS: str = "little"
 
@@ -110,6 +111,12 @@ SPINQ_PORT: int = int(os.environ.get("SPINQ_PORT", "8989"))
 SPINQ_USERNAME: str = os.environ.get("SPINQ_USERNAME", "")
 SPINQ_PASSWORD: str = os.environ.get("SPINQ_PASSWORD", "")
 SPINQ_TASK_NAME: str = os.environ.get("SPINQ_TASK_NAME", "VQC-Experiment")
+
+# ---------------------------------------------------------------------------
+# QRydDemo configuration
+# ---------------------------------------------------------------------------
+QRYD_TOKEN: str = os.environ.get("QRYD_TOKEN", "")
+QRYD_BACKEND_NAME: str = os.environ.get("QRYD_BACKEND_NAME", "rydberg_simulator")
 
 # ---------------------------------------------------------------------------
 # Training

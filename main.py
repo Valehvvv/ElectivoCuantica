@@ -11,6 +11,7 @@ Modify the ``BACKEND_MODE`` variable below to switch between:
 - ``"ibm_simulator"`` → IBM cloud simulator
 - ``"ibm_hardware"``  → real IBM Quantum device
 - ``"spinq_nmr"``     → SpinQ NMR 2-qubit quantum computer
+- ``"qryd"``          → QRydDemo (trapped Rydberg atoms)
 """
 
 from __future__ import annotations
@@ -58,7 +59,7 @@ _RUN_START = time.perf_counter()
 # ──────────────────────────────────────────────────────────────────────
 # CONFIGURATION ─ change only this block to switch backends
 # ──────────────────────────────────────────────────────────────────────
-BACKEND_MODE: str = os.environ.get("BACKEND_MODE", "spinq_nmr")  # "statevector" | "aer_simulator" | "ibm_simulator" | "ibm_hardware"
+BACKEND_MODE: str = os.environ.get("BACKEND_MODE", "spinq_nmr")  # "statevector" | "aer_simulator" | "ibm_simulator" | "ibm_hardware" | "spinq_nmr" | "qryd"
 USE_IBM_SIMULATOR: bool = True  # if "ibm_*", prefer simulator?
 IBM_BACKEND_NAME: str | None = None  # explicit name or None = auto
 
@@ -131,6 +132,18 @@ def _get_backend():
             return None
         except ImportError:
             log.warning("spinqit not installed; falling back to statevector.")
+            return None
+
+    if BACKEND_MODE == "qryd":
+        try:
+            from qryd_backend import create_qryd_backend
+
+            backend = create_qryd_backend()
+            if backend is None:
+                log.warning("QRydDemo backend unavailable; falling back to statevector.")
+            return backend
+        except ImportError:
+            log.warning("qiskit-qryd not installed; falling back to statevector.")
             return None
 
     log.warning("Unknown BACKEND_MODE '%s'; using statevector.", BACKEND_MODE)
@@ -225,7 +238,7 @@ backend = _get_backend()
 
 # Fallback to statevector if backend could not be resolved
 actual_mode = BACKEND_MODE
-if backend is None and BACKEND_MODE.startswith(("ibm", "spinq")):
+if backend is None and BACKEND_MODE.startswith(("ibm", "spinq", "qryd")):
     log.warning("No backend available; falling back to statevector.")
     actual_mode = "statevector"
 
