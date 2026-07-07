@@ -18,6 +18,8 @@ Verifies that:
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
@@ -52,7 +54,9 @@ class FakeBackend(QuantumBackend):
         self.call_count: int = 0
         self.batch_sizes: list[int] = []
 
-    def expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
+    def expectations(
+        self, circuits: list[QuantumCircuit], context: Any = None
+    ) -> list[float]:
         self.call_count += 1
         self.batch_sizes.append(len(circuits))
         # Deterministic values in [-1, 1], independent of circuit content.

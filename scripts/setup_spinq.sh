@@ -7,8 +7,8 @@ VENV=".venv-spinq"
 echo "[setup-spinq] Creando venv Python 3.9 en $VENV ..."
 uv venv --python 3.9 "$VENV"          # uv auto-descarga CPython 3.9 si falta
 
-echo "[setup-spinq] Instalando spinqit + runtime stack (numpy<2 pandas scikit-learn matplotlib scipy qiskit) ... (numpy<2 por compat autograd/spinqit)"
-uv pip install --python "$VENV/bin/python" spinqit "numpy<2" pandas scikit-learn matplotlib scipy qiskit
+echo "[setup-spinq] Instalando spinqit + runtime stack (numpy<2 pandas scikit-learn matplotlib scipy qiskit jsonschema) ... (numpy<2 por compat autograd/spinqit)"
+uv pip install --python "$VENV/bin/python" spinqit "numpy<2" pandas scikit-learn matplotlib scipy qiskit jsonschema
 
 echo "[setup-spinq] Verificando import ..."
 "$VENV/bin/python" -c "import spinqit; print('spinqit OK')"

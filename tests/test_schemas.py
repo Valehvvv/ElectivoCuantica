@@ -53,6 +53,15 @@ def test_events_schema_valid():
             "run_id": "20260706_091900",
             "event": "shutdown",
             "data": {"reason": "completed"}
+        },
+        {
+            "ts": "2026-07-06T09:20:00.000-03:00",
+            "level": "info",
+            "run_id": "20260706_092000",
+            "event": "circuit_exec",
+            "ansatz": "Base",
+            "iter": 3,
+            "data": {"shots": 1024, "counts": {"00": 512, "11": 512}}
         }
     ]
     

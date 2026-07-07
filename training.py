@@ -5,6 +5,7 @@ Provides the core training loop, BCE loss, and result serialisation.
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
 
@@ -12,6 +13,8 @@ import numpy as np
 
 from config import BCE_EPS, DEFAULT_MAX_ITER, INITIAL_THETA_RANGE
 from models import VQC
+
+logger = logging.getLogger("vqc")
 
 
 def binary_cross_entropy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -103,9 +106,7 @@ def train_all_ansatze(
     results: dict[str, dict[str, Any]] = {}
 
     for name, (builder, n_params) in registry.items():
-        print(f"\n{'='*50}")
-        print(f" Training {name} ansatz")
-        print(f"{'='*50}")
+        logger.info("── Training %s ansatz ──", name)
 
         vqc = VQC(
             ansatz_fn=builder,
@@ -120,7 +121,11 @@ def train_all_ansatze(
         result["vqc"] = vqc
         results[name] = result
 
-        print(f"Final loss: {result['loss_history'][-1]:.6f}")
-        print(f"Training time: {result['training_time_sec']:.2f} s")
+        logger.info(
+            "%s: final_loss=%.6f training_time=%.2fs",
+            name,
+            result["loss_history"][-1],
+            result["training_time_sec"],
+        )
 
     return results

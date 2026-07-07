@@ -75,6 +75,12 @@ Notas:
   dependencias del pipeline clásico (`pandas`, `scikit-learn`,
   `matplotlib`, `scipy`) con la misma herramienta, p.ej.:
   `uv pip install --python .venv-spinq/bin/python pandas scikit-learn matplotlib scipy`.
+- `scripts/setup_spinq.sh` también instala `jsonschema` en `.venv-spinq`:
+  `persistence/logger.py` (usado para el registro por-circuito de
+  ejecuciones en hardware SpinQ) importa `schemas/validators.py`, que a
+  su vez depende de `jsonschema`; sin este paquete el import falla en el
+  intérprete 3.9 de `.venv-spinq` al correr `main.py` vía
+  `scripts/run_spinq.sh`.
 
 ## Verificar el guard sin `spinqit` instalado
 

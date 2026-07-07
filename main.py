@@ -143,9 +143,7 @@ def _get_backend():
 # ──────────────────────────────────────────────────────────────────────
 # 1. Preprocessing
 # ──────────────────────────────────────────────────────────────────────
-log.info("=" * 60)
-log.info(" PREPROCESSING")
-log.info("=" * 60)
+log.info("── %s ──", "PREPROCESSING")
 
 df_full = load_dataset()
 df = filter_classes(df_full, class_pair=CLASS_PAIR)
@@ -238,9 +236,7 @@ log.info("Backend object: %s", backend)
 # ──────────────────────────────────────────────────────────────────────
 # 3. Training
 # ──────────────────────────────────────────────────────────────────────
-log.info("=" * 60)
-log.info(" TRAINING")
-log.info("=" * 60)
+log.info("── %s ──", "TRAINING")
 
 full_registry = ansatz_registry()
 if ANSATZ_FILTER is not None:
@@ -271,9 +267,7 @@ training_results = train_all_ansatze(
 # ──────────────────────────────────────────────────────────────────────
 # 4. Evaluation
 # ──────────────────────────────────────────────────────────────────────
-log.info("=" * 60)
-log.info(" EVALUATION")
-log.info("=" * 60)
+log.info("── %s ──", "EVALUATION")
 
 rows = []
 evaluations = {}
@@ -354,9 +348,7 @@ log.info("\n%s", results_df.to_string(index=False))
 # ──────────────────────────────────────────────────────────────────────
 # 6. Visualizations
 # ──────────────────────────────────────────────────────────────────────
-log.info("=" * 60)
-log.info(" VISUALIZATIONS")
-log.info("=" * 60)
+log.info("── %s ──", "VISUALIZATIONS")
 
 plot_training_curves(training_results, save_path=run.results_path("training_curves.png"))
 plot_confusion_matrices(

@@ -29,6 +29,7 @@
         "calibration_done", "phase_start", "phase_end",
         "ansatz_start", "iter", "ansatz_end",
         "eval_start", "eval_end",
+        "circuit_exec",
         "heartbeat", "signal", "watchdog_timeout", "shutdown", "complete"
       ]
     },

@@ -57,7 +57,9 @@ class QuantumBackend(ABC):
     """
 
     @abstractmethod
-    def expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
+    def expectations(
+        self, circuits: list[QuantumCircuit], context: Any = None
+    ) -> list[float]:
         """Return the readout ``<Z>`` value for each circuit, in order.
 
         Parameters
@@ -66,6 +68,11 @@ class QuantumBackend(ABC):
             Circuits **without** measurements/observables attached; each
             backend adds whatever it needs (``measure_all()``, an
             ``EstimatorV2`` PUB observable, etc.).
+        context : optional
+            Backend-specific execution context (e.g. run/iteration
+            metadata for durable per-circuit logging). Ignored by
+            backends that don't need it; defaults to ``None`` so existing
+            callers are unaffected.
 
         Returns
         -------
@@ -89,7 +96,9 @@ class StatevectorBackend(QuantumBackend):
     def __init__(self) -> None:
         self._observable = SparsePauliOp.from_list([(OBSERVABLE_PAULI, 1)])
 
-    def expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
+    def expectations(
+        self, circuits: list[QuantumCircuit], context: Any = None
+    ) -> list[float]:
         return [
             float(
                 np.real(
@@ -131,7 +140,9 @@ class AerBackend(QuantumBackend):
         self._n_shots = n_shots
         self._endianness = endianness
 
-    def expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
+    def expectations(
+        self, circuits: list[QuantumCircuit], context: Any = None
+    ) -> list[float]:
         if not circuits:
             return []
 
@@ -185,7 +196,9 @@ class IBMBackend(QuantumBackend):
         self._n_shots = n_shots
         self._observable = SparsePauliOp.from_list([(OBSERVABLE_PAULI, 1)])
 
-    def expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
+    def expectations(
+        self, circuits: list[QuantumCircuit], context: Any = None
+    ) -> list[float]:
         if not circuits:
             return []
 
@@ -230,7 +243,9 @@ class SpinQBackend(QuantumBackend):
         self._n_shots = n_shots
         self._endianness = endianness
 
-    def expectations(self, circuits: list[QuantumCircuit]) -> list[float]:
+    def expectations(
+        self, circuits: list[QuantumCircuit], context: Any = None
+    ) -> list[float]:
         if not circuits:
             return []
 
@@ -238,7 +253,7 @@ class SpinQBackend(QuantumBackend):
         for qc in measured:
             qc.measure_all()
 
-        result = self._backend.run(measured, shots=self._n_shots)
+        result = self._backend.run(measured, shots=self._n_shots, context=context)
         return [
             expectation_z_qubit0_from_counts(result.get_counts(i), self._endianness)
             for i in range(len(measured))
